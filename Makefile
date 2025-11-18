@@ -59,15 +59,50 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
+# Build Qt GUI
+gui:
+	@echo "Building Qt GUI..."
+	@if command -v qmake6 >/dev/null 2>&1; then \
+		cd gui && qmake6 && make; \
+	elif command -v qmake >/dev/null 2>&1; then \
+		cd gui && qmake && make; \
+	else \
+		echo "Error: qmake or qmake6 not found. Please install Qt5 or Qt6."; \
+		exit 1; \
+	fi
+	@echo "GUI build complete! Run with: ./build/graphpath-gui"
+
+# Run Qt GUI
+run-gui: gui
+	./build/graphpath-gui
+
+# Clean Qt build files
+clean-gui:
+	cd gui && make clean 2>/dev/null || true
+	rm -f gui/Makefile gui/.qmake.stash
+	@echo "GUI clean complete!"
+
+# Clean all (CLI + GUI)
+clean-all: clean clean-gui
+	@echo "Full clean complete!"
+
 # Show help
 help:
 	@echo "GraphPath Makefile"
 	@echo "=================="
-	@echo "Targets:"
-	@echo "  make          - Build the project"
-	@echo "  make run      - Build and run the program"
+	@echo "CLI Targets:"
+	@echo "  make          - Build the CLI project"
+	@echo "  make run      - Build and run the CLI program"
 	@echo "  make test     - Build and run tests"
-	@echo "  make clean    - Remove build files"
+	@echo "  make clean    - Remove CLI build files"
+	@echo ""
+	@echo "GUI Targets:"
+	@echo "  make gui      - Build the Qt GUI"
+	@echo "  make run-gui  - Build and run the GUI"
+	@echo "  make clean-gui - Remove GUI build files"
+	@echo ""
+	@echo "Other Targets:"
+	@echo "  make clean-all - Remove all build files (CLI + GUI)"
 	@echo "  make help     - Show this help message"
 
-.PHONY: all clean run test help
+.PHONY: all clean run test help gui run-gui clean-gui clean-all
