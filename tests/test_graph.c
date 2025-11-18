@@ -149,9 +149,9 @@ void test_self_loop(void) {
 }
 
 int main(void) {
-    printf("\nTPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPW\n");
-    printf("Q                  GraphPath Test Suite                     Q\n");
-    printf("ZPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP]\n\n");
+    printf("\n╔═════════════════════════════════════════════════════════════╗\n");
+    printf("║                  GraphPath Test Suite                       ║\n");
+    printf("╚═════════════════════════════════════════════════════════════╝\n\n");
 
     test_graph_creation();
     test_edge_addition();
@@ -162,9 +162,9 @@ int main(void) {
     test_self_loop();
 
     printf("\n");
-    printf("PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\n");
-    printf("All tests passed! \n");
-    printf("PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\n\n");
+    printf("╔════════════════════════════════════════════════════════════╗\n");
+    printf("║                    All tests passed ✓!                     ║\n");
+    printf("╚════════════════════════════════════════════════════════════╝\n\n");
 
     return 0;
 }

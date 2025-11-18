@@ -109,9 +109,9 @@ int select_algorithms(const Graph* graph, PathResult* (*algorithms[])(const Grap
 // Print comprehensive statistics
 void print_statistics(const Graph* graph, int start, int end, PathResult** results, int num_results) {
     printf("\n");
-    printf("TPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPW\n");
-    printf("Q                    PATHFINDING STATISTICS                  Q\n");
-    printf("ZPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP]\n");
+    printf("╔════════════════════════════════════════════════════════════╗\n");
+    printf("║                    PATHFINDING STATISTICS                  ║\n");
+    printf("╚════════════════════════════════════════════════════════════╝\n");
 
     printf("\n--- Graph Information ---\n");
     printf("Type: %s, %s\n",
@@ -152,14 +152,14 @@ void print_statistics(const Graph* graph, int start, int end, PathResult** resul
     }
 
     printf("\n");
-    printf("PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\n\n");
+    printf("══════════════════════════════════════════════════════════════\n\n");
 }
 
 int main(void) {
-    printf("TPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPW\n");
-    printf("Q              GraphPath - Graph Pathfinding Tool           Q\n");
-    printf("Q                    Version 1.0                             Q\n");
-    printf("ZPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP]\n");
+    printf("╔════════════════════════════════════════════════════════════╗\n");
+    printf("║              GraphPath - Graph Pathfinding Tool            ║\n");
+    printf("║                    Version 1.0                             ║\n");
+    printf("╚════════════════════════════════════════════════════════════╝\n");
 
     // Input graph
     Graph* graph = input_graph();

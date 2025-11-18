@@ -19,10 +19,10 @@ make run
 ```
 Введіть дані:
 ─────────────
-Кількість вершин: 4
-Зважений? (y/n): n
-Орієнтований? (y/n): n
-Кількість ребер: 4
+Enter number of vertices: 4
+Is the graph weighted? (y/n): n
+Is the graph directed? (y/n): n
+Enter number of edges: 4
 
 Ребра:
 0 1
@@ -30,16 +30,16 @@ make run
 2 3
 0 3
 
-Початкова вершина: 0
-Кінцева вершина: 3
+Enter start vertex: 0
+Enter end vertex: 3
 ```
 
 ### Результат
 ```
+Algorithm: BFS (Breadth-First Search)
+Time: 0.015 ms
 Path: 0 -> 3
 Total weight: 1.0
-Algorithm: BFS
-Time: 0.015 ms
 ```
 
 ## 4️⃣ Приклад зі файлу
@@ -162,4 +162,3 @@ n
 
 - Прочитайте [README.md](README.md) для детальної документації
 - Експериментуйте з різними графами!
-
