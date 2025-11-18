@@ -432,9 +432,13 @@ CFLAGS = -Wall -Wextra -std=c11 -O2
 INCLUDES = -Iinclude
 ```
 
-**Цілі:**
-- `make` - збірка проекту
-- `make run` - збірка та запуск
+**Основні команди:**
+- `make` - збірка CLI
+- `make run` - збірка та запуск CLI
 - `make test` - збірка та запуск тестів
-- `make clean` - видалення build файлів
-- `make help` - довідка
+- `make gui` - збірка GUI
+- `make run-gui` - збірка та запуск GUI
+- `make clean` / `make clean-gui` / `make clean-all` - видалення build файлів
+
+> [!TIP]
+> Детальний опис всіх команд: **[MAKECOMMANDS.md](MAKECOMMANDS.md)**

@@ -62,36 +62,21 @@ sudo pacman -S qt5-base
 make gui
 ```
 
-Або вручну:
-
-```bash
-cd gui
-qmake
-make
-cd ..
-```
-
 ### Запуск GUI
 
 ```bash
 make run-gui
 ```
 
-Або напряму:
-
-```bash
-./build/graphpath-gui
-```
-
 ### Очищення збірки
 
 ```bash
-# Очистити тільки GUI
-make clean-gui
-
-# Очистити CLI та GUI
-make clean-all
+make clean-gui    # Очистити тільки GUI
+make clean-all    # Очистити CLI та GUI
 ```
+
+> [!TIP]
+> Детальний опис всіх make команд: **[MAKECOMMANDS.md](MAKECOMMANDS.md)**
 
 ---
 
