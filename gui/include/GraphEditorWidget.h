@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QPoint>
 #include <QMap>
+#include <QPair>
 #include "GraphWrapper.h"
 
 /**
@@ -55,6 +56,7 @@ public:
     // Node operations
     void setNodeCount(int count);
     int getNodeCount() const { return m_nodes.size(); }
+    void addVertex(const QPointF& position);
 
 public slots:
     void onGraphChanged();
@@ -63,6 +65,10 @@ signals:
     void nodeClicked(int nodeId);
     void edgeCreationRequested(int src, int dest);
     void selectionChanged(int nodeId);
+    void vertexAddRequested(const QPointF& position);
+    void vertexRemoveRequested(int vertex);
+    void edgeRemoveRequested(int src, int dest);
+    void edgeWeightChangeRequested(int src, int dest, double currentWeight);
 
 protected:
     // Qt event handlers
@@ -70,6 +76,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
@@ -97,6 +104,10 @@ private:
 
     // Helper methods
     int findNodeAt(const QPointF& pos) const;
+    QPair<int, int> findEdgeAt(const QPointF& pos) const;
+    void handleRightClick(const QPointF& pos);
+    void showNodeContextMenu(const QPointF& pos, int nodeId);
+    void showEdgeContextMenu(const QPointF& pos, int src, int dest);
     void drawNode(QPainter& painter, const NodePosition& node, bool isHighlighted);
     void drawEdge(QPainter& painter, const EdgeData& edge, bool isHighlighted);
     void drawArrow(QPainter& painter, const QPointF& start, const QPointF& end);

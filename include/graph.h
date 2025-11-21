@@ -35,6 +35,9 @@ void graph_destroy(Graph* graph);
 
 // Graph operations
 bool graph_add_edge(Graph* graph, int src, int dest, double weight);
+bool graph_remove_edge(Graph* graph, int src, int dest);
+bool graph_add_vertex(Graph* graph);
+bool graph_remove_vertex(Graph* graph, int vertex);
 void graph_print(const Graph* graph);
 bool graph_is_valid_vertex(const Graph* graph, int vertex);
 

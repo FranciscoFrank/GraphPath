@@ -9,6 +9,7 @@
 #include <QStatusBar>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QInputDialog>
 
 #include "GraphWrapper.h"
 #include "GraphEditorWidget.h"
@@ -42,7 +43,12 @@ private slots:
     // Graph operations
     void onCreateGraph(int numVertices, bool isWeighted, bool isDirected);
     void onClearGraph();
+    void onAddVertex(const QPointF& position);
+    void onRemoveVertex(int vertex);
     void onAddEdge(int src, int dest, double weight);
+    void onAddEdgeInteractive(int src, int dest);
+    void onRemoveEdge(int src, int dest);
+    void onChangeEdgeWeight(int src, int dest, double currentWeight);
 
     // Pathfinding
     void onFindPath(int start, int end);
@@ -55,6 +61,9 @@ private slots:
 
     // Layout operations
     void onAutoLayout();
+
+    // Theme operations
+    void onToggleTheme();
 
     // Error handling
     void onError(const QString& error);
@@ -85,6 +94,7 @@ private:
     QAction* m_exitAction;
     QAction* m_clearAction;
     QAction* m_autoLayoutAction;
+    QAction* m_toggleThemeAction;
     QAction* m_aboutAction;
 
     // Helper methods

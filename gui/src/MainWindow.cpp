@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "ThemeManager.h"
 #include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -42,9 +43,9 @@ void MainWindow::setupUI()
     m_mainSplitter->addWidget(m_graphEditor);
     m_mainSplitter->addWidget(m_rightSplitter);
 
-    // Set proportions: 60% editor, 40% controls
-    m_mainSplitter->setStretchFactor(0, 3);
-    m_mainSplitter->setStretchFactor(1, 2);
+    // Set proportions: 50% editor, 50% controls
+    m_mainSplitter->setStretchFactor(0, 1);
+    m_mainSplitter->setStretchFactor(1, 1);
 
     setCentralWidget(m_mainSplitter);
 }
@@ -85,6 +86,12 @@ void MainWindow::createMenuBar()
     m_autoLayoutAction->setShortcut(QKeySequence("Ctrl+L"));
     m_viewMenu->addAction(m_autoLayoutAction);
 
+    m_viewMenu->addSeparator();
+
+    m_toggleThemeAction = new QAction("Toggle &Theme", this);
+    m_toggleThemeAction->setShortcut(QKeySequence("Ctrl+T"));
+    m_viewMenu->addAction(m_toggleThemeAction);
+
     // Help menu
     m_helpMenu = menuBar()->addMenu("&Help");
 
@@ -98,6 +105,7 @@ void MainWindow::createMenuBar()
     connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExit);
     connect(m_clearAction, &QAction::triggered, this, &MainWindow::onClearGraph);
     connect(m_autoLayoutAction, &QAction::triggered, this, &MainWindow::onAutoLayout);
+    connect(m_toggleThemeAction, &QAction::triggered, this, &MainWindow::onToggleTheme);
     connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAbout);
 }
 
@@ -123,6 +131,18 @@ void MainWindow::connectSignals()
             this, &MainWindow::onSaveGraph);
     connect(m_controlPanel, &ControlPanel::autoLayoutRequested,
             this, &MainWindow::onAutoLayout);
+
+    // Graph editor signals
+    connect(m_graphEditor, &GraphEditorWidget::edgeCreationRequested,
+            this, &MainWindow::onAddEdgeInteractive);
+    connect(m_graphEditor, &GraphEditorWidget::vertexAddRequested,
+            this, &MainWindow::onAddVertex);
+    connect(m_graphEditor, &GraphEditorWidget::vertexRemoveRequested,
+            this, &MainWindow::onRemoveVertex);
+    connect(m_graphEditor, &GraphEditorWidget::edgeRemoveRequested,
+            this, &MainWindow::onRemoveEdge);
+    connect(m_graphEditor, &GraphEditorWidget::edgeWeightChangeRequested,
+            this, &MainWindow::onChangeEdgeWeight);
 
     // Graph wrapper signals
     connect(m_graphWrapper, &GraphWrapper::graphChanged,
@@ -166,6 +186,32 @@ void MainWindow::onClearGraph()
     }
 }
 
+void MainWindow::onAddVertex(const QPointF& position)
+{
+    if (!m_graphWrapper->hasGraph()) {
+        QMessageBox::warning(this, "No Graph",
+                           "Please create a graph first.");
+        return;
+    }
+
+    if (m_graphWrapper->addVertex()) {
+        m_graphEditor->addVertex(position);
+        updateStatusBar(QString("Added vertex %1").arg(m_graphWrapper->getNumVertices() - 1));
+    }
+}
+
+void MainWindow::onRemoveVertex(int vertex)
+{
+    if (!m_graphWrapper->hasGraph()) {
+        return;
+    }
+
+    if (m_graphWrapper->removeVertex(vertex)) {
+        m_graphEditor->onGraphChanged();
+        updateStatusBar(QString("Removed vertex %1").arg(vertex));
+    }
+}
+
 void MainWindow::onAddEdge(int src, int dest, double weight)
 {
     if (m_graphWrapper->addEdge(src, dest, weight)) {
@@ -176,6 +222,65 @@ void MainWindow::onAddEdge(int src, int dest, double weight)
             msg += QString(" (weight: %1)").arg(weight);
         }
         updateStatusBar(msg);
+    }
+}
+
+void MainWindow::onAddEdgeInteractive(int src, int dest)
+{
+    double weight = 1.0;
+
+    // If graph is weighted, prompt user for weight
+    if (m_graphWrapper->isWeighted()) {
+        bool ok;
+        weight = QInputDialog::getDouble(this, "Edge Weight",
+                                        QString("Enter weight for edge %1 → %2:")
+                                            .arg(src).arg(dest),
+                                        1.0, 0.0, 1000.0, 2, &ok);
+        if (!ok) {
+            // User cancelled, don't create edge
+            updateStatusBar("Edge creation cancelled");
+            return;
+        }
+    }
+
+    onAddEdge(src, dest, weight);
+}
+
+void MainWindow::onRemoveEdge(int src, int dest)
+{
+    if (!m_graphWrapper->hasGraph()) {
+        return;
+    }
+
+    if (m_graphWrapper->removeEdge(src, dest)) {
+        m_graphEditor->updateVisualization();
+        updateStatusBar(QString("Removed edge: %1 → %2").arg(src).arg(dest));
+    }
+}
+
+void MainWindow::onChangeEdgeWeight(int src, int dest, double currentWeight)
+{
+    if (!m_graphWrapper->hasGraph() || !m_graphWrapper->isWeighted()) {
+        return;
+    }
+
+    bool ok;
+    double newWeight = QInputDialog::getDouble(this, "Change Edge Weight",
+                                              QString("Enter new weight for edge %1 → %2:")
+                                                  .arg(src).arg(dest),
+                                              currentWeight, 0.0, 1000.0, 2, &ok);
+    if (!ok) {
+        updateStatusBar("Weight change cancelled");
+        return;
+    }
+
+    // Remove old edge and add new one with updated weight
+    if (m_graphWrapper->removeEdge(src, dest)) {
+        if (m_graphWrapper->addEdge(src, dest, newWeight)) {
+            m_graphEditor->updateVisualization();
+            updateStatusBar(QString("Changed weight of edge %1 → %2 to %3")
+                           .arg(src).arg(dest).arg(newWeight));
+        }
     }
 }
 
@@ -282,6 +387,15 @@ void MainWindow::onAutoLayout()
         m_graphEditor->autoLayout();
         updateStatusBar("Applied auto layout");
     }
+}
+
+void MainWindow::onToggleTheme()
+{
+    ThemeManager::instance().toggleTheme();
+
+    ThemeType currentTheme = ThemeManager::instance().currentTheme();
+    QString themeName = (currentTheme == ThemeType::Dark) ? "Dark" : "Light";
+    updateStatusBar(QString("Switched to %1 theme").arg(themeName));
 }
 
 void MainWindow::onError(const QString& error)

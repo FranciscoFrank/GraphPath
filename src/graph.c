@@ -55,6 +55,103 @@ bool graph_is_valid_vertex(const Graph* graph, int vertex) {
     return graph && vertex >= 0 && vertex < graph->num_vertices;
 }
 
+// Add a vertex to the graph (dynamic resizing)
+bool graph_add_vertex(Graph* graph) {
+    if (!graph) {
+        fprintf(stderr, "Error: Graph is NULL\n");
+        return false;
+    }
+
+    int new_count = graph->num_vertices + 1;
+
+    // Reallocate adjacency list array
+    Edge** new_adj_list = (Edge**)realloc(graph->adj_list, new_count * sizeof(Edge*));
+    if (!new_adj_list) {
+        fprintf(stderr, "Error: Memory allocation failed for new vertex\n");
+        return false;
+    }
+
+    graph->adj_list = new_adj_list;
+    graph->adj_list[graph->num_vertices] = NULL;  // Initialize new vertex
+    graph->num_vertices = new_count;
+
+    return true;
+}
+
+// Remove a vertex from the graph
+bool graph_remove_vertex(Graph* graph, int vertex) {
+    if (!graph_is_valid_vertex(graph, vertex)) {
+        fprintf(stderr, "Error: Invalid vertex %d\n", vertex);
+        return false;
+    }
+
+    // Free all edges from this vertex
+    Edge* current = graph->adj_list[vertex];
+    while (current) {
+        Edge* temp = current;
+        current = current->next;
+
+        // Update edge count
+        graph->num_edges--;
+        if (!graph->is_directed) {
+            // For undirected, each edge was counted once
+            // but we need to remove both directions
+        }
+
+        free(temp);
+    }
+    graph->adj_list[vertex] = NULL;
+
+    // Remove all edges TO this vertex from other vertices
+    for (int i = 0; i < graph->num_vertices; i++) {
+        if (i == vertex) continue;
+
+        Edge** edge_ptr = &graph->adj_list[i];
+        while (*edge_ptr) {
+            if ((*edge_ptr)->dest == vertex) {
+                Edge* to_remove = *edge_ptr;
+                *edge_ptr = (*edge_ptr)->next;
+                free(to_remove);
+
+                if (graph->is_directed) {
+                    graph->num_edges--;
+                }
+            } else {
+                edge_ptr = &(*edge_ptr)->next;
+            }
+        }
+    }
+
+    // Shift all vertices after the removed one
+    for (int i = vertex; i < graph->num_vertices - 1; i++) {
+        graph->adj_list[i] = graph->adj_list[i + 1];
+    }
+
+    // Update all edge destinations that reference vertices after the removed one
+    for (int i = 0; i < graph->num_vertices - 1; i++) {
+        Edge* edge = graph->adj_list[i];
+        while (edge) {
+            if (edge->dest > vertex) {
+                edge->dest--;
+            }
+            edge = edge->next;
+        }
+    }
+
+    graph->num_vertices--;
+
+    // Optionally shrink the adjacency list array
+    if (graph->num_vertices > 0) {
+        Edge** new_adj_list = (Edge**)realloc(graph->adj_list,
+                                               graph->num_vertices * sizeof(Edge*));
+        if (new_adj_list) {
+            graph->adj_list = new_adj_list;
+        }
+    }
+
+    return true;
+}
+
 // Add an edge to the graph
 bool graph_add_edge(Graph* graph, int src, int dest, double weight) {
     if (!graph_is_valid_vertex(graph, src) || !graph_is_valid_vertex(graph, dest)) {
@@ -94,6 +191,49 @@ bool graph_add_edge(Graph* graph, int src, int dest, double weight) {
 
     graph->num_edges++;
     return true;
+}
+
+// Remove an edge from the graph
+bool graph_remove_edge(Graph* graph, int src, int dest) {
+    if (!graph_is_valid_vertex(graph, src) || !graph_is_valid_vertex(graph, dest)) {
+        fprintf(stderr, "Error: Invalid vertex (src: %d, dest: %d)\n", src, dest);
+        return false;
+    }
+
+    bool found = false;
+
+    // Remove edge from src to dest
+    Edge** edge_ptr = &graph->adj_list[src];
+    while (*edge_ptr) {
+        if ((*edge_ptr)->dest == dest) {
+            Edge* to_remove = *edge_ptr;
+            *edge_ptr = (*edge_ptr)->next;
+            free(to_remove);
+            found = true;
+            break;
+        }
+        edge_ptr = &(*edge_ptr)->next;
+    }
+
+    // For undirected graphs, remove reverse edge
+    if (found && !graph->is_directed) {
+        edge_ptr = &graph->adj_list[dest];
+        while (*edge_ptr) {
+            if ((*edge_ptr)->dest == src) {
+                Edge* to_remove = *edge_ptr;
+                *edge_ptr = (*edge_ptr)->next;
+                free(to_remove);
+                break;
+            }
+            edge_ptr = &(*edge_ptr)->next;
+        }
+    }
+
+    if (found) {
+        graph->num_edges--;
+    }
+
+    return found;
 }
 
 // Print graph structure

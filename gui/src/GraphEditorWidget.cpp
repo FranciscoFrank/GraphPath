@@ -1,8 +1,11 @@
 #include "GraphEditorWidget.h"
+#include "ThemeManager.h"
 #include <QPainter>
 #include <QMouseEvent>
 #include <QtMath>
 #include <QDebug>
+#include <QMenu>
+#include <QAction>
 
 GraphEditorWidget::GraphEditorWidget(QWidget *parent)
     : QWidget(parent),
@@ -16,6 +19,10 @@ GraphEditorWidget::GraphEditorWidget(QWidget *parent)
     setMinimumSize(400, 400);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+
+    // Connect to theme changes
+    connect(&ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, [this]() { update(); });
 }
 
 GraphEditorWidget::~GraphEditorWidget()
@@ -68,6 +75,13 @@ void GraphEditorWidget::setNodeCount(int count)
 
     // Apply default layout
     circularLayout();
+}
+
+void GraphEditorWidget::addVertex(const QPointF& position)
+{
+    int newId = m_nodes.size();
+    m_nodes.append(NodePosition(newId, position));
+    update();
 }
 
 void GraphEditorWidget::autoLayout()
@@ -147,12 +161,13 @@ void GraphEditorWidget::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Background
-    painter.fillRect(rect(), Qt::white);
+    // Background with theme colors
+    ThemeManager& theme = ThemeManager::instance();
+    painter.fillRect(rect(), theme.canvasBackground());
 
     if (!m_graphWrapper || !m_graphWrapper->hasGraph()) {
         // Draw placeholder text
-        painter.setPen(Qt::gray);
+        painter.setPen(theme.textSecondary());
         painter.drawText(rect(), Qt::AlignCenter,
                         "Create a graph to start\n(Use controls on the right)");
         return;
@@ -173,7 +188,8 @@ void GraphEditorWidget::paintEvent(QPaintEvent* event)
 
     // Draw edge creation indicator
     if (m_edgeCreationMode && m_edgeCreationStart >= 0) {
-        painter.setPen(QPen(Qt::blue, 2, Qt::DashLine));
+        ThemeManager& theme = ThemeManager::instance();
+        painter.setPen(QPen(theme.nodeSelectedBorder(), 2, Qt::DashLine));
         QPointF start = getNodeCenter(m_edgeCreationStart);
         QPointF end = mapFromGlobal(QCursor::pos());
         painter.drawLine(start, end);
@@ -182,12 +198,35 @@ void GraphEditorWidget::paintEvent(QPaintEvent* event)
 
 void GraphEditorWidget::mousePressEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::RightButton) {
+        handleRightClick(event->pos());
+        return;
+    }
+
     if (event->button() != Qt::LeftButton) {
         return;
     }
 
-    QPointF pos = event->position();
+    QPointF pos = event->pos();
     int nodeId = findNodeAt(pos);
+
+    // If in edge creation mode, complete the edge
+    if (m_edgeCreationMode && nodeId >= 0) {
+        if (nodeId != m_edgeCreationStart) {
+            emit edgeCreationRequested(m_edgeCreationStart, nodeId);
+        }
+        m_edgeCreationMode = false;
+        m_edgeCreationStart = -1;
+        setCursor(Qt::ArrowCursor);
+        update();
+        return;
+    }
+
+    // Ctrl+Click on empty space creates a new vertex
+    if (nodeId < 0 && (event->modifiers() & Qt::ControlModifier)) {
+        emit vertexAddRequested(pos);
+        return;
+    }
 
     if (nodeId >= 0) {
         m_selectedNode = nodeId;
@@ -205,7 +244,13 @@ void GraphEditorWidget::mousePressEvent(QMouseEvent* event)
 
 void GraphEditorWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    QPointF pos = event->position();
+    QPointF pos = event->pos();
+
+    // If in edge creation mode, update visual feedback
+    if (m_edgeCreationMode) {
+        update();
+        return;
+    }
 
     if (m_isDragging && m_selectedNode >= 0) {
         // Drag node
@@ -226,6 +271,25 @@ void GraphEditorWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     Q_UNUSED(event);
     m_isDragging = false;
+}
+
+void GraphEditorWidget::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (event->button() != Qt::LeftButton) {
+        return;
+    }
+
+    QPointF pos = event->pos();
+    int nodeId = findNodeAt(pos);
+
+    if (nodeId >= 0) {
+        // Start edge creation mode
+        m_edgeCreationMode = true;
+        m_edgeCreationStart = nodeId;
+        m_isDragging = false;  // Prevent dragging during edge creation
+        setCursor(Qt::CrossCursor);
+        update();
+    }
 }
 
 void GraphEditorWidget::resizeEvent(QResizeEvent* event)
@@ -251,21 +315,22 @@ int GraphEditorWidget::findNodeAt(const QPointF& pos) const
 void GraphEditorWidget::drawNode(QPainter& painter, const NodePosition& node, bool isHighlighted)
 {
     QPointF center = node.position;
+    ThemeManager& theme = ThemeManager::instance();
 
-    // Determine colors
-    QColor fillColor = Qt::white;
-    QColor borderColor = Qt::black;
+    // Determine colors based on theme
+    QColor fillColor = theme.nodeFill();
+    QColor borderColor = theme.nodeBorder();
     int borderWidth = NODE_BORDER_WIDTH;
 
     if (isHighlighted) {
-        fillColor = QColor(100, 200, 255);
-        borderColor = QColor(0, 100, 200);
+        fillColor = theme.nodeHighlightFill();
+        borderColor = theme.nodeHighlightBorder();
         borderWidth = HIGHLIGHT_WIDTH;
     } else if (node.id == m_selectedNode) {
-        fillColor = QColor(255, 255, 200);
-        borderColor = Qt::darkBlue;
+        fillColor = theme.nodeSelectedFill();
+        borderColor = theme.nodeSelectedBorder();
     } else if (node.id == m_hoveredNode) {
-        fillColor = QColor(240, 240, 240);
+        fillColor = theme.nodeHoverFill();
     }
 
     // Draw node circle
@@ -274,7 +339,7 @@ void GraphEditorWidget::drawNode(QPainter& painter, const NodePosition& node, bo
     painter.drawEllipse(center, NODE_RADIUS, NODE_RADIUS);
 
     // Draw node label
-    painter.setPen(Qt::black);
+    painter.setPen(theme.nodeText());
     QFont font = painter.font();
     font.setPointSize(12);
     font.setBold(true);
@@ -293,6 +358,7 @@ void GraphEditorWidget::drawEdge(QPainter& painter, const EdgeData& edge, bool i
         return;
     }
 
+    ThemeManager& theme = ThemeManager::instance();
     QPointF start = m_nodes[edge.src].position;
     QPointF end = m_nodes[edge.dest].position;
 
@@ -303,8 +369,8 @@ void GraphEditorWidget::drawEdge(QPainter& painter, const EdgeData& edge, bool i
     QPointF endOffset = end - QPointF(NODE_RADIUS * qCos(angle),
                                       NODE_RADIUS * qSin(angle));
 
-    // Determine edge style
-    QColor edgeColor = isHighlighted ? QColor(255, 100, 100) : Qt::black;
+    // Determine edge style based on theme
+    QColor edgeColor = isHighlighted ? theme.edgeHighlight() : theme.edgeNormal();
     int edgeWidth = isHighlighted ? HIGHLIGHT_WIDTH : EDGE_WIDTH;
 
     painter.setPen(QPen(edgeColor, edgeWidth));
@@ -319,8 +385,8 @@ void GraphEditorWidget::drawEdge(QPainter& painter, const EdgeData& edge, bool i
     if (m_graphWrapper && m_graphWrapper->isWeighted()) {
         QPointF midPoint = (start + end) / 2.0;
 
-        painter.setPen(Qt::black);
-        painter.setBrush(Qt::white);
+        painter.setPen(theme.edgeText());
+        painter.setBrush(theme.canvasBackground());
 
         QString weightText = QString::number(edge.weight, 'g', 3);
         QFont font = painter.font();
@@ -363,8 +429,16 @@ bool GraphEditorWidget::isEdgeHighlighted(int src, int dest) const
         return false;
     }
 
+    bool isDirected = m_graphWrapper && m_graphWrapper->isDirected();
+
     for (int i = 0; i < m_highlightedPath.size() - 1; i++) {
+        // Check forward direction
         if (m_highlightedPath[i] == src && m_highlightedPath[i + 1] == dest) {
+            return true;
+        }
+
+        // For undirected graphs, also check reverse direction
+        if (!isDirected && m_highlightedPath[i] == dest && m_highlightedPath[i + 1] == src) {
             return true;
         }
     }
@@ -378,4 +452,109 @@ QPointF GraphEditorWidget::getNodeCenter(int nodeId) const
         return m_nodes[nodeId].position;
     }
     return QPointF();
+}
+
+QPair<int, int> GraphEditorWidget::findEdgeAt(const QPointF& pos) const
+{
+    if (!m_graphWrapper || !m_graphWrapper->hasGraph()) {
+        return QPair<int, int>(-1, -1);
+    }
+
+    QVector<EdgeData> edges = m_graphWrapper->getEdges();
+    const double EDGE_HIT_TOLERANCE = 8.0; // pixels
+
+    for (const EdgeData& edge : edges) {
+        if (edge.src < 0 || edge.src >= m_nodes.size() ||
+            edge.dest < 0 || edge.dest >= m_nodes.size()) {
+            continue;
+        }
+
+        QPointF start = m_nodes[edge.src].position;
+        QPointF end = m_nodes[edge.dest].position;
+
+        // Calculate distance from point to line segment
+        QPointF lineVec = end - start;
+        QPointF pointVec = pos - start;
+
+        double lineLenSq = QPointF::dotProduct(lineVec, lineVec);
+        if (lineLenSq < 0.0001) continue; // Too short
+
+        double t = qBound(0.0, QPointF::dotProduct(pointVec, lineVec) / lineLenSq, 1.0);
+        QPointF projection = start + t * lineVec;
+
+        double distance = qSqrt(QPointF::dotProduct(pos - projection, pos - projection));
+
+        if (distance <= EDGE_HIT_TOLERANCE) {
+            return QPair<int, int>(edge.src, edge.dest);
+        }
+    }
+
+    return QPair<int, int>(-1, -1);
+}
+
+void GraphEditorWidget::handleRightClick(const QPointF& pos)
+{
+    // First check if clicking on a node
+    int nodeId = findNodeAt(pos);
+    if (nodeId >= 0) {
+        showNodeContextMenu(pos, nodeId);
+        return;
+    }
+
+    // Then check if clicking on an edge
+    QPair<int, int> edge = findEdgeAt(pos);
+    if (edge.first >= 0 && edge.second >= 0) {
+        showEdgeContextMenu(pos, edge.first, edge.second);
+        return;
+    }
+}
+
+void GraphEditorWidget::showNodeContextMenu(const QPointF& pos, int nodeId)
+{
+    QMenu menu(this);
+    QAction* deleteAction = menu.addAction(QString("Delete Vertex %1").arg(nodeId));
+
+    QAction* selected = menu.exec(mapToGlobal(pos.toPoint()));
+    if (selected == deleteAction) {
+        emit vertexRemoveRequested(nodeId);
+    }
+}
+
+void GraphEditorWidget::showEdgeContextMenu(const QPointF& pos, int src, int dest)
+{
+    if (!m_graphWrapper) return;
+
+    QMenu menu(this);
+    QAction* deleteAction = menu.addAction(QString("Delete Edge %1 → %2").arg(src).arg(dest));
+
+    QAction* changeWeightAction = nullptr;
+    if (m_graphWrapper->isWeighted()) {
+        // Find current weight
+        double currentWeight = 1.0;
+        QVector<EdgeData> edges = m_graphWrapper->getEdges();
+        for (const EdgeData& edge : edges) {
+            if (edge.src == src && edge.dest == dest) {
+                currentWeight = edge.weight;
+                break;
+            }
+        }
+
+        changeWeightAction = menu.addAction(QString("Change Weight (current: %1)").arg(currentWeight));
+    }
+
+    QAction* selected = menu.exec(mapToGlobal(pos.toPoint()));
+    if (selected == deleteAction) {
+        emit edgeRemoveRequested(src, dest);
+    } else if (changeWeightAction && selected == changeWeightAction) {
+        // Find current weight again
+        double currentWeight = 1.0;
+        QVector<EdgeData> edges = m_graphWrapper->getEdges();
+        for (const EdgeData& edge : edges) {
+            if (edge.src == src && edge.dest == dest) {
+                currentWeight = edge.weight;
+                break;
+            }
+        }
+        emit edgeWeightChangeRequested(src, dest, currentWeight);
+    }
 }

@@ -20,6 +20,7 @@ SOURCES += src/main.cpp \
            src/ControlPanel.cpp \
            src/ResultsWidget.cpp \
            src/GraphWrapper.cpp \
+           src/ThemeManager.cpp \
            ../src/graph.c \
            ../src/bfs.c \
            ../src/dfs.c \
@@ -31,6 +32,7 @@ HEADERS += include/MainWindow.h \
            include/ControlPanel.h \
            include/ResultsWidget.h \
            include/GraphWrapper.h \
+           include/ThemeManager.h \
            ../include/graph.h \
            ../include/bfs.h \
            ../include/dfs.h \

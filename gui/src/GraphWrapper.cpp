@@ -33,6 +33,43 @@ void GraphWrapper::clearGraph()
     emit graphChanged();
 }
 
+bool GraphWrapper::addVertex()
+{
+    if (!m_graph) {
+        emit errorOccurred("No graph created");
+        return false;
+    }
+
+    if (!graph_add_vertex(m_graph)) {
+        emit errorOccurred("Failed to add vertex");
+        return false;
+    }
+
+    emit graphChanged();
+    return true;
+}
+
+bool GraphWrapper::removeVertex(int vertex)
+{
+    if (!m_graph) {
+        emit errorOccurred("No graph created");
+        return false;
+    }
+
+    if (vertex < 0 || vertex >= m_graph->num_vertices) {
+        emit errorOccurred(QString("Invalid vertex: %1").arg(vertex));
+        return false;
+    }
+
+    if (!graph_remove_vertex(m_graph, vertex)) {
+        emit errorOccurred(QString("Failed to remove vertex: %1").arg(vertex));
+        return false;
+    }
+
+    emit graphChanged();
+    return true;
+}
+
 bool GraphWrapper::addEdge(int src, int dest, double weight)
 {
     if (!m_graph) {
@@ -57,11 +94,24 @@ bool GraphWrapper::addEdge(int src, int dest, double weight)
 
 bool GraphWrapper::removeEdge(int src, int dest)
 {
-    // TODO: Implement edge removal in C library if needed
-    Q_UNUSED(src);
-    Q_UNUSED(dest);
-    emit errorOccurred("Edge removal not yet implemented");
-    return false;
+    if (!m_graph) {
+        emit errorOccurred("No graph created");
+        return false;
+    }
+
+    if (src < 0 || src >= m_graph->num_vertices ||
+        dest < 0 || dest >= m_graph->num_vertices) {
+        emit errorOccurred(QString("Invalid vertices: %1 -> %2").arg(src).arg(dest));
+        return false;
+    }
+
+    if (!graph_remove_edge(m_graph, src, dest)) {
+        emit errorOccurred(QString("Failed to remove edge: %1 -> %2").arg(src).arg(dest));
+        return false;
+    }
+
+    emit graphChanged();
+    return true;
 }
 
 int GraphWrapper::getNumVertices() const

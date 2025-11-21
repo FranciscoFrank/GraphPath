@@ -55,6 +55,10 @@ public:
     void createGraph(int numVertices, bool isWeighted, bool isDirected);
     void clearGraph();
 
+    // Vertex operations
+    bool addVertex();
+    bool removeVertex(int vertex);
+
     // Edge operations
     bool addEdge(int src, int dest, double weight = 1.0);
     bool removeEdge(int src, int dest);

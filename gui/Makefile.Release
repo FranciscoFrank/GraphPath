@@ -57,6 +57,7 @@ SOURCES       = src/main.cpp \
 		src/ControlPanel.cpp \
 		src/ResultsWidget.cpp \
 		src/GraphWrapper.cpp \
+		src/ThemeManager.cpp \
 		../src/graph.c \
 		../src/bfs.c \
 		../src/dfs.c \
@@ -64,13 +65,15 @@ SOURCES       = src/main.cpp \
 		release/moc_GraphEditorWidget.cpp \
 		release/moc_ControlPanel.cpp \
 		release/moc_ResultsWidget.cpp \
-		release/moc_GraphWrapper.cpp
+		release/moc_GraphWrapper.cpp \
+		release/moc_ThemeManager.cpp
 OBJECTS       = release/main.o \
 		release/MainWindow.o \
 		release/GraphEditorWidget.o \
 		release/ControlPanel.o \
 		release/ResultsWidget.o \
 		release/GraphWrapper.o \
+		release/ThemeManager.o \
 		release/graph.o \
 		release/bfs.o \
 		release/dfs.o \
@@ -79,7 +82,8 @@ OBJECTS       = release/main.o \
 		release/moc_GraphEditorWidget.o \
 		release/moc_ControlPanel.o \
 		release/moc_ResultsWidget.o \
-		release/moc_GraphWrapper.o
+		release/moc_GraphWrapper.o \
+		release/moc_ThemeManager.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/linux.conf \
@@ -152,6 +156,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		include/ControlPanel.h \
 		include/ResultsWidget.h \
 		include/GraphWrapper.h \
+		include/ThemeManager.h \
 		../include/graph.h \
 		../include/bfs.h \
 		../include/dfs.h \
@@ -161,6 +166,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		src/ControlPanel.cpp \
 		src/ResultsWidget.cpp \
 		src/GraphWrapper.cpp \
+		src/ThemeManager.cpp \
 		../src/graph.c \
 		../src/bfs.c \
 		../src/dfs.c \
@@ -192,8 +198,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents include/MainWindow.h include/GraphEditorWidget.h include/ControlPanel.h include/ResultsWidget.h include/GraphWrapper.h ../include/graph.h ../include/bfs.h ../include/dfs.h ../include/dijkstra.h $(DISTDIR)/
-	$(COPY_FILE) --parents src/main.cpp src/MainWindow.cpp src/GraphEditorWidget.cpp src/ControlPanel.cpp src/ResultsWidget.cpp src/GraphWrapper.cpp ../src/graph.c ../src/bfs.c ../src/dfs.c ../src/dijkstra.c $(DISTDIR)/
+	$(COPY_FILE) --parents include/MainWindow.h include/GraphEditorWidget.h include/ControlPanel.h include/ResultsWidget.h include/GraphWrapper.h include/ThemeManager.h ../include/graph.h ../include/bfs.h ../include/dfs.h ../include/dijkstra.h $(DISTDIR)/
+	$(COPY_FILE) --parents src/main.cpp src/MainWindow.cpp src/GraphEditorWidget.cpp src/ControlPanel.cpp src/ResultsWidget.cpp src/GraphWrapper.cpp src/ThemeManager.cpp ../src/graph.c ../src/bfs.c ../src/dfs.c ../src/dijkstra.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -225,9 +231,9 @@ compiler_moc_predefs_clean:
 release/moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp
 	g++ -pipe -O2 -Wall -Wextra -fPIC -dM -E -o release/moc_predefs.h /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: release/moc_MainWindow.cpp release/moc_GraphEditorWidget.cpp release/moc_ControlPanel.cpp release/moc_ResultsWidget.cpp release/moc_GraphWrapper.cpp
+compiler_moc_header_make_all: release/moc_MainWindow.cpp release/moc_GraphEditorWidget.cpp release/moc_ControlPanel.cpp release/moc_ResultsWidget.cpp release/moc_GraphWrapper.cpp release/moc_ThemeManager.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) release/moc_MainWindow.cpp release/moc_GraphEditorWidget.cpp release/moc_ControlPanel.cpp release/moc_ResultsWidget.cpp release/moc_GraphWrapper.cpp
+	-$(DEL_FILE) release/moc_MainWindow.cpp release/moc_GraphEditorWidget.cpp release/moc_ControlPanel.cpp release/moc_ResultsWidget.cpp release/moc_GraphWrapper.cpp release/moc_ThemeManager.cpp
 release/moc_MainWindow.cpp: include/MainWindow.h \
 		include/GraphWrapper.h \
 		../include/graph.h \
@@ -275,6 +281,11 @@ release/moc_GraphWrapper.cpp: include/GraphWrapper.h \
 		/usr/lib/qt6/libexec/moc
 	/usr/lib/qt6/libexec/moc $(DEFINES) --include /home/wayfinder/GraphPath/gui/release/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -I/home/wayfinder/GraphPath/gui -I/home/wayfinder/GraphPath/include -I/home/wayfinder/GraphPath/gui/include -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/GraphWrapper.h -o release/moc_GraphWrapper.cpp
 
+release/moc_ThemeManager.cpp: include/ThemeManager.h \
+		release/moc_predefs.h \
+		/usr/lib/qt6/libexec/moc
+	/usr/lib/qt6/libexec/moc $(DEFINES) --include /home/wayfinder/GraphPath/gui/release/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -I/home/wayfinder/GraphPath/gui -I/home/wayfinder/GraphPath/include -I/home/wayfinder/GraphPath/gui/include -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/ThemeManager.h -o release/moc_ThemeManager.cpp
+
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
 compiler_moc_source_make_all:
@@ -310,7 +321,8 @@ release/MainWindow.o: src/MainWindow.cpp include/MainWindow.h \
 		../include/dijkstra.h \
 		include/GraphEditorWidget.h \
 		include/ControlPanel.h \
-		include/ResultsWidget.h
+		include/ResultsWidget.h \
+		include/ThemeManager.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/MainWindow.o src/MainWindow.cpp
 
 release/GraphEditorWidget.o: src/GraphEditorWidget.cpp include/GraphEditorWidget.h \
@@ -318,7 +330,8 @@ release/GraphEditorWidget.o: src/GraphEditorWidget.cpp include/GraphEditorWidget
 		../include/graph.h \
 		../include/bfs.h \
 		../include/dfs.h \
-		../include/dijkstra.h
+		../include/dijkstra.h \
+		include/ThemeManager.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/GraphEditorWidget.o src/GraphEditorWidget.cpp
 
 release/ControlPanel.o: src/ControlPanel.cpp include/ControlPanel.h
@@ -338,6 +351,9 @@ release/GraphWrapper.o: src/GraphWrapper.cpp include/GraphWrapper.h \
 		../include/dfs.h \
 		../include/dijkstra.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/GraphWrapper.o src/GraphWrapper.cpp
+
+release/ThemeManager.o: src/ThemeManager.cpp include/ThemeManager.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/ThemeManager.o src/ThemeManager.cpp
 
 release/graph.o: ../src/graph.c ../include/graph.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o release/graph.o ../src/graph.c
@@ -368,6 +384,9 @@ release/moc_ResultsWidget.o: release/moc_ResultsWidget.cpp
 
 release/moc_GraphWrapper.o: release/moc_GraphWrapper.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/moc_GraphWrapper.o release/moc_GraphWrapper.cpp
+
+release/moc_ThemeManager.o: release/moc_ThemeManager.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/moc_ThemeManager.o release/moc_ThemeManager.cpp
 
 ####### Install
 
