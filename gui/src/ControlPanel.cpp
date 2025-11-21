@@ -132,7 +132,9 @@ void ControlPanel::createGraphConfigGroup()
 
     // Create graph button
     m_createGraphButton = new QPushButton("Create Graph");
-    m_createGraphButton->setStyleSheet("font-weight: bold;");
+    QFont boldFont = m_createGraphButton->font();
+    boldFont.setBold(true);
+    m_createGraphButton->setFont(boldFont);
     layout->addWidget(m_createGraphButton);
 
     // Clear graph button
@@ -206,7 +208,10 @@ void ControlPanel::createPathfindingGroup()
 
     // Find path button
     m_findPathButton = new QPushButton("Find Path");
-    m_findPathButton->setStyleSheet("font-weight: bold; background-color: #4CAF50; color: white;");
+    QFont boldFont2 = m_findPathButton->font();
+    boldFont2.setBold(true);
+    m_findPathButton->setFont(boldFont2);
+    m_findPathButton->setStyleSheet("background-color: #4CAF50; color: white;");
     layout->addWidget(m_findPathButton);
 
     connect(m_findPathButton, &QPushButton::clicked,

@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QString>
 #include <QSettings>
+#include <QPalette>
 
 /**
  * @brief Theme type enumeration
@@ -86,6 +87,9 @@ public:
     QColor text() const { return m_palette.text; }
     QColor textSecondary() const { return m_palette.textSecondary; }
 
+    // Apply theme to application
+    void applyThemeToApplication();
+
 signals:
     void themeChanged(ThemeType newTheme);
 
@@ -102,6 +106,11 @@ private:
     void updatePalette();
     ColorPalette createLightPalette();
     ColorPalette createDarkPalette();
+
+    // Qt palette creation
+    QPalette createLightQPalette();
+    QPalette createDarkQPalette();
+    QString createStyleSheet();
 
     // Data members
     ThemeType m_currentTheme;
