@@ -24,7 +24,9 @@ SOURCES += src/main.cpp \
            ../src/graph.c \
            ../src/bfs.c \
            ../src/dfs.c \
-           ../src/dijkstra.c
+           ../src/dijkstra.c \
+           ../src/astar.c \
+           ../src/bellman_ford.c
 
 # Header files
 HEADERS += include/MainWindow.h \
@@ -36,7 +38,9 @@ HEADERS += include/MainWindow.h \
            ../include/graph.h \
            ../include/bfs.h \
            ../include/dfs.h \
-           ../include/dijkstra.h
+           ../include/dijkstra.h \
+           ../include/astar.h \
+           ../include/bellman_ford.h
 
 # Default rules for deployment
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -45,6 +49,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 # Compiler flags for C files
 QMAKE_CFLAGS += -std=c11 -Wall -Wextra
+
+# Link math library for C code
+LIBS += -lm
 
 # Enable debugging
 CONFIG += debug_and_release

@@ -11,6 +11,8 @@ extern "C" {
     #include "bfs.h"
     #include "dfs.h"
     #include "dijkstra.h"
+    #include "astar.h"
+    #include "bellman_ford.h"
 }
 
 /**
@@ -69,6 +71,10 @@ public:
     bool isWeighted() const;
     bool isDirected() const;
     bool hasGraph() const;
+
+    // Coordinate operations (for A*)
+    bool setVertexCoordinates(int vertex, double x, double y);
+    bool hasCoordinates() const;
 
     // Get graph data for visualization
     QVector<EdgeData> getEdges() const;

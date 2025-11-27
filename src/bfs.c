@@ -39,6 +39,18 @@ static bool queue_is_empty(const Queue* queue) {
 }
 
 static void queue_enqueue(Queue* queue, int value) {
+    // Check if queue needs to grow
+    if (queue->rear >= queue->capacity) {
+        int new_capacity = queue->capacity * 2;
+        int* new_data = (int*)realloc(queue->data, new_capacity * sizeof(int));
+        if (new_data) {
+            queue->data = new_data;
+            queue->capacity = new_capacity;
+        } else {
+            fprintf(stderr, "Warning: Failed to grow queue\n");
+            return;  // Skip this enqueue if we can't grow
+        }
+    }
     queue->data[queue->rear++] = value;
 }
 

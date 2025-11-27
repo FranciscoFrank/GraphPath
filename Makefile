@@ -14,8 +14,8 @@ TARGET = $(BUILD_DIR)/graphpath
 TEST_TARGET = $(BUILD_DIR)/test_graph
 
 # Source files
-SOURCES = $(SRC_DIR)/graph.c $(SRC_DIR)/bfs.c $(SRC_DIR)/dfs.c $(SRC_DIR)/dijkstra.c $(SRC_DIR)/main.c
-LIB_SOURCES = $(SRC_DIR)/graph.c $(SRC_DIR)/bfs.c $(SRC_DIR)/dfs.c $(SRC_DIR)/dijkstra.c
+SOURCES = $(SRC_DIR)/graph.c $(SRC_DIR)/bfs.c $(SRC_DIR)/dfs.c $(SRC_DIR)/dijkstra.c $(SRC_DIR)/astar.c $(SRC_DIR)/bellman_ford.c $(SRC_DIR)/main.c
+LIB_SOURCES = $(SRC_DIR)/graph.c $(SRC_DIR)/bfs.c $(SRC_DIR)/dfs.c $(SRC_DIR)/dijkstra.c $(SRC_DIR)/astar.c $(SRC_DIR)/bellman_ford.c
 
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)

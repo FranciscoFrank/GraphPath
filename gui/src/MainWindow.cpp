@@ -235,7 +235,7 @@ void MainWindow::onAddEdgeInteractive(int src, int dest)
         weight = QInputDialog::getDouble(this, "Edge Weight",
                                         QString("Enter weight for edge %1 → %2:")
                                             .arg(src).arg(dest),
-                                        1.0, 0.0, 1000.0, 2, &ok);
+                                        1.0, -1000.0, 1000.0, 2, &ok);
         if (!ok) {
             // User cancelled, don't create edge
             updateStatusBar("Edge creation cancelled");
@@ -268,7 +268,7 @@ void MainWindow::onChangeEdgeWeight(int src, int dest, double currentWeight)
     double newWeight = QInputDialog::getDouble(this, "Change Edge Weight",
                                               QString("Enter new weight for edge %1 → %2:")
                                                   .arg(src).arg(dest),
-                                              currentWeight, 0.0, 1000.0, 2, &ok);
+                                              currentWeight, -1000.0, 1000.0, 2, &ok);
     if (!ok) {
         updateStatusBar("Weight change cancelled");
         return;
@@ -304,11 +304,21 @@ void MainWindow::onFindPath(int start, int end)
     // Display results
     m_resultsWidget->displayResults(m_graphWrapper, results, start, end);
 
-    // Highlight path from first algorithm (usually the best one)
-    if (results[0].found) {
-        m_graphEditor->highlightPath(results[0].path);
+    // Find the fastest algorithm
+    int fastestIndex = 0;
+    double minTime = results[0].timeMs;
+    for (int i = 1; i < results.size(); i++) {
+        if (results[i].timeMs < minTime) {
+            minTime = results[i].timeMs;
+            fastestIndex = i;
+        }
+    }
+
+    // Highlight path from fastest algorithm
+    if (results[fastestIndex].found) {
+        m_graphEditor->highlightPath(results[fastestIndex].path);
         updateStatusBar(QString("Path found from %1 to %2 using %3")
-                       .arg(start).arg(end).arg(results[0].algorithm));
+                       .arg(start).arg(end).arg(results[fastestIndex].algorithm));
     } else {
         m_graphEditor->clearHighlight();
         updateStatusBar(QString("No path found from %1 to %2")

@@ -58,6 +58,9 @@ public:
     int getNodeCount() const { return m_nodes.size(); }
     void addVertex(const QPointF& position);
 
+    // Coordinate synchronization (for A* algorithm)
+    void syncCoordinatesToGraph();
+
 public slots:
     void onGraphChanged();
 

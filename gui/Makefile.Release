@@ -39,7 +39,7 @@ DISTNAME      = graphpath-gui1.0.0
 DISTDIR = /home/wayfinder/GraphPath/gui/release/graphpath-gui1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath-link,/usr/lib/x86_64-linux-gnu
-LIBS          = $(SUBLIBS) /usr/lib/x86_64-linux-gnu/libQt6Widgets.so /usr/lib/x86_64-linux-gnu/libQt6Gui.so /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so /usr/lib/x86_64-linux-gnu/libQt6Core.so -lpthread -lGLX -lOpenGL   
+LIBS          = $(SUBLIBS) -lm /usr/lib/x86_64-linux-gnu/libQt6Widgets.so /usr/lib/x86_64-linux-gnu/libQt6Gui.so /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so /usr/lib/x86_64-linux-gnu/libQt6Core.so -lpthread -lGLX -lOpenGL   
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -61,7 +61,9 @@ SOURCES       = src/main.cpp \
 		../src/graph.c \
 		../src/bfs.c \
 		../src/dfs.c \
-		../src/dijkstra.c release/moc_MainWindow.cpp \
+		../src/dijkstra.c \
+		../src/astar.c \
+		../src/bellman_ford.c release/moc_MainWindow.cpp \
 		release/moc_GraphEditorWidget.cpp \
 		release/moc_ControlPanel.cpp \
 		release/moc_ResultsWidget.cpp \
@@ -78,6 +80,8 @@ OBJECTS       = release/main.o \
 		release/bfs.o \
 		release/dfs.o \
 		release/dijkstra.o \
+		release/astar.o \
+		release/bellman_ford.o \
 		release/moc_MainWindow.o \
 		release/moc_GraphEditorWidget.o \
 		release/moc_ControlPanel.o \
@@ -160,7 +164,9 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		../include/graph.h \
 		../include/bfs.h \
 		../include/dfs.h \
-		../include/dijkstra.h src/main.cpp \
+		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h src/main.cpp \
 		src/MainWindow.cpp \
 		src/GraphEditorWidget.cpp \
 		src/ControlPanel.cpp \
@@ -170,7 +176,9 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		../src/graph.c \
 		../src/bfs.c \
 		../src/dfs.c \
-		../src/dijkstra.c
+		../src/dijkstra.c \
+		../src/astar.c \
+		../src/bellman_ford.c
 QMAKE_TARGET  = graphpath-gui
 DESTDIR       = ../build/
 TARGET        = ../build/graphpath-gui
@@ -198,8 +206,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents include/MainWindow.h include/GraphEditorWidget.h include/ControlPanel.h include/ResultsWidget.h include/GraphWrapper.h include/ThemeManager.h ../include/graph.h ../include/bfs.h ../include/dfs.h ../include/dijkstra.h $(DISTDIR)/
-	$(COPY_FILE) --parents src/main.cpp src/MainWindow.cpp src/GraphEditorWidget.cpp src/ControlPanel.cpp src/ResultsWidget.cpp src/GraphWrapper.cpp src/ThemeManager.cpp ../src/graph.c ../src/bfs.c ../src/dfs.c ../src/dijkstra.c $(DISTDIR)/
+	$(COPY_FILE) --parents include/MainWindow.h include/GraphEditorWidget.h include/ControlPanel.h include/ResultsWidget.h include/GraphWrapper.h include/ThemeManager.h ../include/graph.h ../include/bfs.h ../include/dfs.h ../include/dijkstra.h ../include/astar.h ../include/bellman_ford.h $(DISTDIR)/
+	$(COPY_FILE) --parents src/main.cpp src/MainWindow.cpp src/GraphEditorWidget.cpp src/ControlPanel.cpp src/ResultsWidget.cpp src/GraphWrapper.cpp src/ThemeManager.cpp ../src/graph.c ../src/bfs.c ../src/dfs.c ../src/dijkstra.c ../src/astar.c ../src/bellman_ford.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -240,6 +248,8 @@ release/moc_MainWindow.cpp: include/MainWindow.h \
 		../include/bfs.h \
 		../include/dfs.h \
 		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h \
 		include/GraphEditorWidget.h \
 		include/ControlPanel.h \
 		include/ResultsWidget.h \
@@ -253,6 +263,8 @@ release/moc_GraphEditorWidget.cpp: include/GraphEditorWidget.h \
 		../include/bfs.h \
 		../include/dfs.h \
 		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h \
 		release/moc_predefs.h \
 		/usr/lib/qt6/libexec/moc
 	/usr/lib/qt6/libexec/moc $(DEFINES) --include /home/wayfinder/GraphPath/gui/release/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -I/home/wayfinder/GraphPath/gui -I/home/wayfinder/GraphPath/include -I/home/wayfinder/GraphPath/gui/include -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/GraphEditorWidget.h -o release/moc_GraphEditorWidget.cpp
@@ -268,6 +280,8 @@ release/moc_ResultsWidget.cpp: include/ResultsWidget.h \
 		../include/bfs.h \
 		../include/dfs.h \
 		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h \
 		release/moc_predefs.h \
 		/usr/lib/qt6/libexec/moc
 	/usr/lib/qt6/libexec/moc $(DEFINES) --include /home/wayfinder/GraphPath/gui/release/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -I/home/wayfinder/GraphPath/gui -I/home/wayfinder/GraphPath/include -I/home/wayfinder/GraphPath/gui/include -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/ResultsWidget.h -o release/moc_ResultsWidget.cpp
@@ -277,6 +291,8 @@ release/moc_GraphWrapper.cpp: include/GraphWrapper.h \
 		../include/bfs.h \
 		../include/dfs.h \
 		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h \
 		release/moc_predefs.h \
 		/usr/lib/qt6/libexec/moc
 	/usr/lib/qt6/libexec/moc $(DEFINES) --include /home/wayfinder/GraphPath/gui/release/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -I/home/wayfinder/GraphPath/gui -I/home/wayfinder/GraphPath/include -I/home/wayfinder/GraphPath/gui/include -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/GraphWrapper.h -o release/moc_GraphWrapper.cpp
@@ -308,6 +324,8 @@ release/main.o: src/main.cpp include/MainWindow.h \
 		../include/bfs.h \
 		../include/dfs.h \
 		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h \
 		include/GraphEditorWidget.h \
 		include/ControlPanel.h \
 		include/ResultsWidget.h
@@ -319,6 +337,8 @@ release/MainWindow.o: src/MainWindow.cpp include/MainWindow.h \
 		../include/bfs.h \
 		../include/dfs.h \
 		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h \
 		include/GraphEditorWidget.h \
 		include/ControlPanel.h \
 		include/ResultsWidget.h \
@@ -331,6 +351,8 @@ release/GraphEditorWidget.o: src/GraphEditorWidget.cpp include/GraphEditorWidget
 		../include/bfs.h \
 		../include/dfs.h \
 		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h \
 		include/ThemeManager.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/GraphEditorWidget.o src/GraphEditorWidget.cpp
 
@@ -342,14 +364,18 @@ release/ResultsWidget.o: src/ResultsWidget.cpp include/ResultsWidget.h \
 		../include/graph.h \
 		../include/bfs.h \
 		../include/dfs.h \
-		../include/dijkstra.h
+		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/ResultsWidget.o src/ResultsWidget.cpp
 
 release/GraphWrapper.o: src/GraphWrapper.cpp include/GraphWrapper.h \
 		../include/graph.h \
 		../include/bfs.h \
 		../include/dfs.h \
-		../include/dijkstra.h
+		../include/dijkstra.h \
+		../include/astar.h \
+		../include/bellman_ford.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/GraphWrapper.o src/GraphWrapper.cpp
 
 release/ThemeManager.o: src/ThemeManager.cpp include/ThemeManager.h
@@ -369,6 +395,14 @@ release/dfs.o: ../src/dfs.c ../include/dfs.h \
 release/dijkstra.o: ../src/dijkstra.c ../include/dijkstra.h \
 		../include/graph.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o release/dijkstra.o ../src/dijkstra.c
+
+release/astar.o: ../src/astar.c ../include/astar.h \
+		../include/graph.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o release/astar.o ../src/astar.c
+
+release/bellman_ford.o: ../src/bellman_ford.c ../include/bellman_ford.h \
+		../include/graph.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o release/bellman_ford.o ../src/bellman_ford.c
 
 release/moc_MainWindow.o: release/moc_MainWindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release/moc_MainWindow.o release/moc_MainWindow.cpp

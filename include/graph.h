@@ -10,6 +10,12 @@ typedef struct Edge {
     struct Edge* next;     // Next edge in list
 } Edge;
 
+// Vertex coordinates for heuristic calculations
+typedef struct {
+    double x;
+    double y;
+} Coordinates;
+
 // Graph structure
 typedef struct {
     int num_vertices;      // Number of vertices
@@ -17,6 +23,7 @@ typedef struct {
     bool is_weighted;      // Is graph weighted?
     bool is_directed;      // Is graph directed?
     Edge** adj_list;       // Array of adjacency lists
+    Coordinates* coords;   // Coordinates for each vertex (optional, for A*)
 } Graph;
 
 // Path result structure
@@ -40,6 +47,12 @@ bool graph_add_vertex(Graph* graph);
 bool graph_remove_vertex(Graph* graph, int vertex);
 void graph_print(const Graph* graph);
 bool graph_is_valid_vertex(const Graph* graph, int vertex);
+
+// Coordinate operations
+bool graph_set_coordinates(Graph* graph, int vertex, double x, double y);
+bool graph_has_coordinates(const Graph* graph);
+double graph_euclidean_distance(const Graph* graph, int v1, int v2);
+double graph_manhattan_distance(const Graph* graph, int v1, int v2);
 
 // Path result operations
 PathResult* path_result_create(void);

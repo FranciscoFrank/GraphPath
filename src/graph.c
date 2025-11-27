@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 // Create a new graph
 Graph* graph_create(int num_vertices, bool is_weighted, bool is_directed) {
@@ -29,6 +30,9 @@ Graph* graph_create(int num_vertices, bool is_weighted, bool is_directed) {
         return NULL;
     }
 
+    // Initialize coordinates to NULL (optional feature)
+    graph->coords = NULL;
+
     return graph;
 }
 
@@ -47,6 +51,7 @@ void graph_destroy(Graph* graph) {
     }
 
     free(graph->adj_list);
+    free(graph->coords);  // Free coordinates if allocated
     free(graph);
 }
 
@@ -176,8 +181,8 @@ bool graph_add_edge(Graph* graph, int src, int dest, double weight) {
     new_edge->next = graph->adj_list[src];
     graph->adj_list[src] = new_edge;
 
-    // For undirected graphs, add reverse edge
-    if (!graph->is_directed) {
+    // For undirected graphs, add reverse edge (but not for self-loops)
+    if (!graph->is_directed && src != dest) {
         Edge* reverse_edge = (Edge*)malloc(sizeof(Edge));
         if (!reverse_edge) {
             fprintf(stderr, "Error: Memory allocation failed for reverse edge\n");
@@ -215,8 +220,8 @@ bool graph_remove_edge(Graph* graph, int src, int dest) {
         edge_ptr = &(*edge_ptr)->next;
     }
 
-    // For undirected graphs, remove reverse edge
-    if (found && !graph->is_directed) {
+    // For undirected graphs, remove reverse edge (but not for self-loops)
+    if (found && !graph->is_directed && src != dest) {
         edge_ptr = &graph->adj_list[dest];
         while (*edge_ptr) {
             if ((*edge_ptr)->dest == src) {
@@ -307,4 +312,58 @@ void path_result_print(const PathResult* result) {
     } else {
         printf("  Path: Not found\n");
     }
+}
+
+// Set coordinates for a vertex
+bool graph_set_coordinates(Graph* graph, int vertex, double x, double y) {
+    if (!graph_is_valid_vertex(graph, vertex)) {
+        fprintf(stderr, "Error: Invalid vertex %d\n", vertex);
+        return false;
+    }
+
+    // Allocate coordinates array if not already allocated
+    if (!graph->coords) {
+        graph->coords = (Coordinates*)calloc(graph->num_vertices, sizeof(Coordinates));
+        if (!graph->coords) {
+            fprintf(stderr, "Error: Memory allocation failed for coordinates\n");
+            return false;
+        }
+    }
+
+    graph->coords[vertex].x = x;
+    graph->coords[vertex].y = y;
+    return true;
+}
+
+// Check if graph has coordinates
+bool graph_has_coordinates(const Graph* graph) {
+    return graph && graph->coords != NULL;
+}
+
+// Calculate Euclidean distance between two vertices
+double graph_euclidean_distance(const Graph* graph, int v1, int v2) {
+    if (!graph_has_coordinates(graph)) {
+        return 0.0;
+    }
+    if (!graph_is_valid_vertex(graph, v1) || !graph_is_valid_vertex(graph, v2)) {
+        return 0.0;
+    }
+
+    double dx = graph->coords[v2].x - graph->coords[v1].x;
+    double dy = graph->coords[v2].y - graph->coords[v1].y;
+    return sqrt(dx * dx + dy * dy);
+}
+
+// Calculate Manhattan distance between two vertices
+double graph_manhattan_distance(const Graph* graph, int v1, int v2) {
+    if (!graph_has_coordinates(graph)) {
+        return 0.0;
+    }
+    if (!graph_is_valid_vertex(graph, v1) || !graph_is_valid_vertex(graph, v2)) {
+        return 0.0;
+    }
+
+    double dx = fabs(graph->coords[v2].x - graph->coords[v1].x);
+    double dy = fabs(graph->coords[v2].y - graph->coords[v1].y);
+    return dx + dy;
 }

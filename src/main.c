@@ -6,6 +6,8 @@
 #include "bfs.h"
 #include "dfs.h"
 #include "dijkstra.h"
+#include "astar.h"
+#include "bellman_ford.h"
 
 #define MAX_RESULTS 10
 
@@ -90,13 +92,51 @@ Graph* input_graph(void) {
     return graph;
 }
 
+// Input coordinates for vertices (optional, for A*)
+bool input_coordinates(Graph* graph) {
+    char input[10];
+    printf("\nDo you want to add vertex coordinates for A* algorithm? (y/n): ");
+    if (scanf("%s", input) != 1) {
+        return false;
+    }
+
+    if (input[0] != 'y' && input[0] != 'Y') {
+        return false;
+    }
+
+    printf("\nEnter coordinates for each vertex (format: x y)\n");
+    for (int i = 0; i < graph->num_vertices; i++) {
+        double x, y;
+        printf("Vertex %d: ", i);
+        if (scanf("%lf %lf", &x, &y) != 2) {
+            fprintf(stderr, "Error: Invalid coordinates\n");
+            return false;
+        }
+        if (!graph_set_coordinates(graph, i, x, y)) {
+            fprintf(stderr, "Error: Failed to set coordinates\n");
+            return false;
+        }
+    }
+
+    printf("\nCoordinates added successfully!\n");
+    return true;
+}
+
 // Select appropriate algorithms based on graph properties
 int select_algorithms(const Graph* graph, PathResult* (*algorithms[])(const Graph*, int, int)) {
     int count = 0;
 
     if (graph->is_weighted) {
-        // For weighted graphs, use Dijkstra
+        // For weighted graphs, use all weighted algorithms
         algorithms[count++] = dijkstra_find_path;
+        algorithms[count++] = bellman_ford_find_path;
+
+        // Add A* variants
+        if (graph_has_coordinates(graph)) {
+            algorithms[count++] = astar_euclidean;
+            algorithms[count++] = astar_manhattan;
+        }
+        algorithms[count++] = astar_zero;  // Always include (works without coordinates)
     } else {
         // For unweighted graphs, use BFS and DFS
         algorithms[count++] = bfs_find_path;
@@ -170,6 +210,11 @@ int main(void) {
 
     // Display graph
     graph_print(graph);
+
+    // Optionally input coordinates for A* algorithm
+    if (graph->is_weighted) {
+        input_coordinates(graph);
+    }
 
     // Input start and end vertices
     int start, end;

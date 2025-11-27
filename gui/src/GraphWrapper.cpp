@@ -139,6 +139,26 @@ bool GraphWrapper::hasGraph() const
     return m_graph != nullptr;
 }
 
+bool GraphWrapper::setVertexCoordinates(int vertex, double x, double y)
+{
+    if (!m_graph) {
+        emit errorOccurred("No graph created");
+        return false;
+    }
+
+    if (vertex < 0 || vertex >= m_graph->num_vertices) {
+        emit errorOccurred(QString("Invalid vertex: %1").arg(vertex));
+        return false;
+    }
+
+    return graph_set_coordinates(m_graph, vertex, x, y);
+}
+
+bool GraphWrapper::hasCoordinates() const
+{
+    return m_graph ? graph_has_coordinates(m_graph) : false;
+}
+
 QVector<EdgeData> GraphWrapper::getEdges() const
 {
     QVector<EdgeData> edges;
@@ -179,11 +199,41 @@ QVector<PathResultData> GraphWrapper::findPaths(int start, int end)
 
     // Select algorithms based on graph type (same logic as CLI)
     if (m_graph->is_weighted) {
-        // Weighted graph: use Dijkstra
-        PathResult* result = dijkstra_find_path(m_graph, start, end);
-        if (result) {
-            results.append(convertPathResult(result));
-            path_result_destroy(result);
+        // Weighted graph: use all weighted algorithms
+        PathResult* dijkstra_result = dijkstra_find_path(m_graph, start, end);
+        PathResult* bellman_result = bellman_ford_find_path(m_graph, start, end);
+        PathResult* astar_zero_result = astar_zero(m_graph, start, end);
+
+        if (dijkstra_result) {
+            results.append(convertPathResult(dijkstra_result));
+            path_result_destroy(dijkstra_result);
+        }
+
+        if (bellman_result) {
+            results.append(convertPathResult(bellman_result));
+            path_result_destroy(bellman_result);
+        }
+
+        // Add A* variants with coordinates if available
+        if (graph_has_coordinates(m_graph)) {
+            PathResult* astar_euclidean_result = astar_euclidean(m_graph, start, end);
+            PathResult* astar_manhattan_result = astar_manhattan(m_graph, start, end);
+
+            if (astar_euclidean_result) {
+                results.append(convertPathResult(astar_euclidean_result));
+                path_result_destroy(astar_euclidean_result);
+            }
+
+            if (astar_manhattan_result) {
+                results.append(convertPathResult(astar_manhattan_result));
+                path_result_destroy(astar_manhattan_result);
+            }
+        }
+
+        // Always include A* with zero heuristic
+        if (astar_zero_result) {
+            results.append(convertPathResult(astar_zero_result));
+            path_result_destroy(astar_zero_result);
         }
     } else {
         // Unweighted graph: use BFS and DFS for comparison
@@ -214,26 +264,43 @@ bool GraphWrapper::loadFromFile(const QString& filename)
 
     QTextStream in(&file);
 
-    // Read graph properties
+    // Read graph properties (CLI format: 4 lines)
     int numVertices, numEdges;
     bool isWeighted, isDirected;
 
+    // Line 1: number of vertices
     QString line = in.readLine();
     if (line.isNull()) {
         emit errorOccurred("Empty file");
         return false;
     }
+    numVertices = line.trimmed().toInt();
 
-    QStringList parts = line.split(' ');
-    if (parts.size() < 4) {
-        emit errorOccurred("Invalid file format");
+    // Line 2: is weighted (y/n)
+    line = in.readLine();
+    if (line.isNull()) {
+        emit errorOccurred("Invalid file format: missing weighted flag");
         return false;
     }
+    QString weightedFlag = line.trimmed().toLower();
+    isWeighted = (weightedFlag == "y" || weightedFlag == "yes" || weightedFlag == "1");
 
-    numVertices = parts[0].toInt();
-    numEdges = parts[1].toInt();
-    isWeighted = (parts[2].toInt() == 1);
-    isDirected = (parts[3].toInt() == 1);
+    // Line 3: is directed (y/n)
+    line = in.readLine();
+    if (line.isNull()) {
+        emit errorOccurred("Invalid file format: missing directed flag");
+        return false;
+    }
+    QString directedFlag = line.trimmed().toLower();
+    isDirected = (directedFlag == "y" || directedFlag == "yes" || directedFlag == "1");
+
+    // Line 4: number of edges
+    line = in.readLine();
+    if (line.isNull()) {
+        emit errorOccurred("Invalid file format: missing edge count");
+        return false;
+    }
+    numEdges = line.trimmed().toInt();
 
     createGraph(numVertices, isWeighted, isDirected);
 
@@ -242,6 +309,7 @@ bool GraphWrapper::loadFromFile(const QString& filename)
     }
 
     // Read edges
+    QStringList parts;
     for (int i = 0; i < numEdges; i++) {
         line = in.readLine();
         if (line.isNull()) {

@@ -107,6 +107,7 @@ void GraphEditorWidget::circularLayout()
         );
     }
 
+    syncCoordinatesToGraph();
     update();
 }
 
@@ -134,7 +135,44 @@ void GraphEditorWidget::gridLayout()
         );
     }
 
+    syncCoordinatesToGraph();
     update();
+}
+
+void GraphEditorWidget::syncCoordinatesToGraph()
+{
+    if (!m_graphWrapper || !m_graphWrapper->hasGraph()) {
+        return;
+    }
+
+    // Normalize coordinates to a 0-1000 range for better heuristic calculations
+    // This makes the coordinates independent of the actual widget size
+    double minX = width();
+    double maxX = 0;
+    double minY = height();
+    double maxY = 0;
+
+    // Find bounds
+    for (const NodePosition& node : m_nodes) {
+        minX = qMin(minX, node.position.x());
+        maxX = qMax(maxX, node.position.x());
+        minY = qMin(minY, node.position.y());
+        maxY = qMax(maxY, node.position.y());
+    }
+
+    double rangeX = maxX - minX;
+    double rangeY = maxY - minY;
+
+    // Avoid division by zero
+    if (rangeX < 1.0) rangeX = 1.0;
+    if (rangeY < 1.0) rangeY = 1.0;
+
+    // Set normalized coordinates for each vertex
+    for (int i = 0; i < m_nodes.size(); i++) {
+        double normalizedX = ((m_nodes[i].position.x() - minX) / rangeX) * 1000.0;
+        double normalizedY = ((m_nodes[i].position.y() - minY) / rangeY) * 1000.0;
+        m_graphWrapper->setVertexCoordinates(i, normalizedX, normalizedY);
+    }
 }
 
 void GraphEditorWidget::onGraphChanged()
@@ -149,6 +187,9 @@ void GraphEditorWidget::onGraphChanged()
     if (newCount != currentCount) {
         setNodeCount(newCount);
     }
+
+    // Automatically sync coordinates when graph changes
+    syncCoordinatesToGraph();
 
     clearHighlight();
     update();
@@ -212,9 +253,8 @@ void GraphEditorWidget::mousePressEvent(QMouseEvent* event)
 
     // If in edge creation mode, complete the edge
     if (m_edgeCreationMode && nodeId >= 0) {
-        if (nodeId != m_edgeCreationStart) {
-            emit edgeCreationRequested(m_edgeCreationStart, nodeId);
-        }
+        // Allow self-loops: removed the nodeId != m_edgeCreationStart check
+        emit edgeCreationRequested(m_edgeCreationStart, nodeId);
         m_edgeCreationMode = false;
         m_edgeCreationStart = -1;
         setCursor(Qt::ArrowCursor);
@@ -270,6 +310,12 @@ void GraphEditorWidget::mouseMoveEvent(QMouseEvent* event)
 void GraphEditorWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     Q_UNUSED(event);
+
+    // Sync coordinates after dragging
+    if (m_isDragging) {
+        syncCoordinatesToGraph();
+    }
+
     m_isDragging = false;
 }
 
@@ -362,6 +408,64 @@ void GraphEditorWidget::drawEdge(QPainter& painter, const EdgeData& edge, bool i
     QPointF start = m_nodes[edge.src].position;
     QPointF end = m_nodes[edge.dest].position;
 
+    // Determine edge style based on theme
+    QColor edgeColor = isHighlighted ? theme.edgeHighlight() : theme.edgeNormal();
+    int edgeWidth = isHighlighted ? HIGHLIGHT_WIDTH : EDGE_WIDTH;
+    painter.setPen(QPen(edgeColor, edgeWidth));
+
+    // Handle self-loops (edge from node to itself)
+    if (edge.src == edge.dest) {
+        // Draw a circular loop above the node
+        const double loopRadius = NODE_RADIUS * 0.8;
+        const double loopOffset = NODE_RADIUS + loopRadius;
+
+        QPointF loopCenter = start - QPointF(0, loopOffset);
+        QRectF loopRect(loopCenter.x() - loopRadius, loopCenter.y() - loopRadius,
+                        loopRadius * 2, loopRadius * 2);
+
+        // Draw the loop arc (270 degrees, leaving gap for arrow)
+        int startAngle = 45 * 16;  // Qt uses 1/16th degree units
+        int spanAngle = 270 * 16;
+        painter.drawArc(loopRect, startAngle, spanAngle);
+
+        // Draw arrow at the end of the loop for directed graphs
+        if (m_graphWrapper && m_graphWrapper->isDirected()) {
+            double arrowAngle = qDegreesToRadians(45.0 + 270.0);
+            QPointF arrowPos = loopCenter + QPointF(loopRadius * qCos(arrowAngle),
+                                                     loopRadius * qSin(arrowAngle));
+            QPointF arrowDir = arrowPos - loopCenter;
+            arrowDir = QPointF(-arrowDir.y(), arrowDir.x()); // Perpendicular (tangent)
+            double dirLen = qSqrt(arrowDir.x() * arrowDir.x() + arrowDir.y() * arrowDir.y());
+            arrowDir /= dirLen;
+
+            QPointF arrowStart = arrowPos - arrowDir * ARROW_SIZE;
+            drawArrow(painter, arrowStart, arrowPos);
+        }
+
+        // Draw weight label for weighted graphs
+        if (m_graphWrapper && m_graphWrapper->isWeighted()) {
+            QPointF labelPos = loopCenter - QPointF(0, loopRadius + 5);
+
+            painter.setPen(theme.edgeText());
+            painter.setBrush(theme.canvasBackground());
+
+            QString weightText = QString::number(edge.weight, 'g', 3);
+            QFont font = painter.font();
+            font.setPointSize(9);
+            painter.setFont(font);
+
+            QFontMetrics fm(font);
+            QRectF textRect = fm.boundingRect(weightText);
+            textRect.moveCenter(labelPos);
+            textRect.adjust(-3, -3, 3, 3);
+
+            painter.drawRect(textRect);
+            painter.drawText(textRect, Qt::AlignCenter, weightText);
+        }
+        return;
+    }
+
+    // Normal edge (not a self-loop)
     // Calculate edge endpoints (offset by node radius)
     double angle = qAtan2(end.y() - start.y(), end.x() - start.x());
     QPointF startOffset = start + QPointF(NODE_RADIUS * qCos(angle),
@@ -369,11 +473,6 @@ void GraphEditorWidget::drawEdge(QPainter& painter, const EdgeData& edge, bool i
     QPointF endOffset = end - QPointF(NODE_RADIUS * qCos(angle),
                                       NODE_RADIUS * qSin(angle));
 
-    // Determine edge style based on theme
-    QColor edgeColor = isHighlighted ? theme.edgeHighlight() : theme.edgeNormal();
-    int edgeWidth = isHighlighted ? HIGHLIGHT_WIDTH : EDGE_WIDTH;
-
-    painter.setPen(QPen(edgeColor, edgeWidth));
     painter.drawLine(startOffset, endOffset);
 
     // Draw arrow for directed graphs
@@ -425,12 +524,23 @@ void GraphEditorWidget::drawArrow(QPainter& painter, const QPointF& start, const
 
 bool GraphEditorWidget::isEdgeHighlighted(int src, int dest) const
 {
-    if (m_highlightedPath.size() < 2) {
+    if (m_highlightedPath.size() < 1) {
         return false;
     }
 
     bool isDirected = m_graphWrapper && m_graphWrapper->isDirected();
 
+    // Handle self-loops: check if the path has consecutive identical vertices
+    if (src == dest) {
+        for (int i = 0; i < m_highlightedPath.size() - 1; i++) {
+            if (m_highlightedPath[i] == src && m_highlightedPath[i + 1] == src) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Handle normal edges
     for (int i = 0; i < m_highlightedPath.size() - 1; i++) {
         // Check forward direction
         if (m_highlightedPath[i] == src && m_highlightedPath[i + 1] == dest) {
@@ -472,6 +582,23 @@ QPair<int, int> GraphEditorWidget::findEdgeAt(const QPointF& pos) const
         QPointF start = m_nodes[edge.src].position;
         QPointF end = m_nodes[edge.dest].position;
 
+        // Handle self-loops
+        if (edge.src == edge.dest) {
+            const double loopRadius = NODE_RADIUS * 0.8;
+            const double loopOffset = NODE_RADIUS + loopRadius;
+            QPointF loopCenter = start - QPointF(0, loopOffset);
+
+            // Check if click is near the loop circle
+            double distToLoopCenter = qSqrt(QPointF::dotProduct(pos - loopCenter, pos - loopCenter));
+            double distToLoopArc = qAbs(distToLoopCenter - loopRadius);
+
+            if (distToLoopArc <= EDGE_HIT_TOLERANCE) {
+                return QPair<int, int>(edge.src, edge.dest);
+            }
+            continue;
+        }
+
+        // Handle normal edges
         // Calculate distance from point to line segment
         QPointF lineVec = end - start;
         QPointF pointVec = pos - start;

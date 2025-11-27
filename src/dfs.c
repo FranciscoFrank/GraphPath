@@ -37,6 +37,18 @@ static bool stack_is_empty(const Stack* stack) {
 }
 
 static void stack_push(Stack* stack, int value) {
+    // Check if stack needs to grow
+    if (stack->top + 1 >= stack->capacity) {
+        int new_capacity = stack->capacity * 2;
+        int* new_data = (int*)realloc(stack->data, new_capacity * sizeof(int));
+        if (new_data) {
+            stack->data = new_data;
+            stack->capacity = new_capacity;
+        } else {
+            fprintf(stderr, "Warning: Failed to grow stack\n");
+            return;  // Skip this push if we can't grow
+        }
+    }
     stack->data[++stack->top] = value;
 }
 
