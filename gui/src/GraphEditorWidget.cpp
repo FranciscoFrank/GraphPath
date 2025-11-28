@@ -531,12 +531,30 @@ bool GraphEditorWidget::isEdgeHighlighted(int src, int dest) const
     bool isDirected = m_graphWrapper && m_graphWrapper->isDirected();
 
     // Handle self-loops: check if the path has consecutive identical vertices
+    // OR if the path contains only this vertex (start == end with self-loop)
     if (src == dest) {
+        // Case 1: Path explicitly traverses the loop (e.g., [1, 1])
         for (int i = 0; i < m_highlightedPath.size() - 1; i++) {
             if (m_highlightedPath[i] == src && m_highlightedPath[i + 1] == src) {
                 return true;
             }
         }
+
+        // Case 2: Path contains only this vertex (e.g., searching 1->1 returns [1])
+        // This means we're looking for a path from a vertex to itself
+        // If the path is just [vertex] and a self-loop exists, highlight it
+        if (m_highlightedPath.size() == 1 && m_highlightedPath[0] == src) {
+            // Check if a self-loop actually exists on this vertex
+            if (m_graphWrapper) {
+                QVector<EdgeData> edges = m_graphWrapper->getEdges();
+                for (const EdgeData& edge : edges) {
+                    if (edge.src == src && edge.dest == src) {
+                        return true;  // Self-loop exists, highlight it
+                    }
+                }
+            }
+        }
+
         return false;
     }
 

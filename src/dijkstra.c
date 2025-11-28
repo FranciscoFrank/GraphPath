@@ -80,7 +80,18 @@ static void pq_heapify_down(PriorityQueue* pq, int index) {
 }
 
 static void pq_push(PriorityQueue* pq, int vertex, double distance) {
-    if (pq->size >= pq->capacity) return;
+    // Check if PQ needs to grow
+    if (pq->size >= pq->capacity) {
+        int new_capacity = pq->capacity * 2;
+        PQNode* new_nodes = (PQNode*)realloc(pq->nodes, new_capacity * sizeof(PQNode));
+        if (new_nodes) {
+            pq->nodes = new_nodes;
+            pq->capacity = new_capacity;
+        } else {
+            fprintf(stderr, "Warning: Failed to grow priority queue\n");
+            return;  // Skip this push if we can't grow
+        }
+    }
 
     pq->nodes[pq->size].vertex = vertex;
     pq->nodes[pq->size].distance = distance;
@@ -143,7 +154,8 @@ PathResult* dijkstra_find_path(const Graph* graph, int start, int end) {
     double* dist = (double*)malloc(n * sizeof(double));
     int* parent = (int*)malloc(n * sizeof(int));
     bool* visited = (bool*)calloc(n, sizeof(bool));
-    PriorityQueue* pq = pq_create(n * n);
+    // Start with reasonable initial capacity, will grow dynamically if needed
+    PriorityQueue* pq = pq_create(n > 1000 ? n : 1000);
 
     if (!dist || !parent || !visited || !pq) {
         free(dist);

@@ -81,7 +81,18 @@ static void astar_pq_heapify_down(AStarPQ* pq, int index) {
 }
 
 static void astar_pq_push(AStarPQ* pq, int vertex, double g_score, double f_score) {
-    if (pq->size >= pq->capacity) return;
+    // Check if PQ needs to grow
+    if (pq->size >= pq->capacity) {
+        int new_capacity = pq->capacity * 2;
+        AStarNode* new_nodes = (AStarNode*)realloc(pq->nodes, new_capacity * sizeof(AStarNode));
+        if (new_nodes) {
+            pq->nodes = new_nodes;
+            pq->capacity = new_capacity;
+        } else {
+            fprintf(stderr, "Warning: Failed to grow A* priority queue\n");
+            return;  // Skip this push if we can't grow
+        }
+    }
 
     pq->nodes[pq->size].vertex = vertex;
     pq->nodes[pq->size].g_score = g_score;
@@ -147,7 +158,8 @@ PathResult* astar_find_path(const Graph* graph, int start, int end,
     double* f_score = (double*)malloc(n * sizeof(double));
     int* parent = (int*)malloc(n * sizeof(int));
     bool* in_closed_set = (bool*)calloc(n, sizeof(bool));
-    AStarPQ* open_set = astar_pq_create(n * n);
+    // Start with reasonable initial capacity, will grow dynamically if needed
+    AStarPQ* open_set = astar_pq_create(n > 1000 ? n : 1000);
 
     if (!g_score || !f_score || !parent || !in_closed_set || !open_set) {
         free(g_score);
