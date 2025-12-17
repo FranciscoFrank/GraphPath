@@ -12,22 +12,8 @@ graphpath
 test_graph
 
 # Editor files
-*.swp
-*.swo
-*~
 .vscode/
 .idea/
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Dependency files
-*.d
-*.dep
+# Stress test files
+stress_*.txt

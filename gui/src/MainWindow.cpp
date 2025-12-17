@@ -301,24 +301,19 @@ void MainWindow::onFindPath(int start, int end)
         return;
     }
 
-    // Display results
-    m_resultsWidget->displayResults(m_graphWrapper, results, start, end);
+    // Smart algorithm selection
+    QString selectionReason;
+    int bestIndex = selectBestAlgorithm(results, selectionReason);
 
-    // Find the fastest algorithm
-    int fastestIndex = 0;
-    double minTime = results[0].timeMs;
-    for (int i = 1; i < results.size(); i++) {
-        if (results[i].timeMs < minTime) {
-            minTime = results[i].timeMs;
-            fastestIndex = i;
-        }
-    }
+    // Display results with highlight information
+    m_resultsWidget->displayResults(m_graphWrapper, results, start, end, bestIndex, selectionReason);
 
-    // Highlight path from fastest algorithm
-    if (results[fastestIndex].found) {
-        m_graphEditor->highlightPath(results[fastestIndex].path);
-        updateStatusBar(QString("Path found from %1 to %2 using %3")
-                       .arg(start).arg(end).arg(results[fastestIndex].algorithm));
+    // Highlight path from best algorithm
+    if (bestIndex >= 0 && results[bestIndex].found) {
+        m_graphEditor->highlightPath(results[bestIndex].path);
+        updateStatusBar(QString("Highlighting %1: %2")
+                       .arg(results[bestIndex].algorithm)
+                       .arg(selectionReason));
     } else {
         m_graphEditor->clearHighlight();
         updateStatusBar(QString("No path found from %1 to %2")
@@ -418,20 +413,152 @@ void MainWindow::onAbout()
 {
     QMessageBox::about(this, "About GraphPath",
         "<h2>GraphPath GUI</h2>"
-        "<p>Version 1.0</p>"
+        "<p>Version 1.1</p>"
         "<p>A graph pathfinding visualization tool that implements "
         "multiple shortest-path algorithms:</p>"
         "<ul>"
         "<li>BFS (Breadth-First Search)</li>"
         "<li>DFS (Depth-First Search)</li>"
         "<li>Dijkstra's Algorithm</li>"
+        "<li>A* Algorithm</li>"
+        "<li>Bellman-Ford Algorithm</li>"
         "</ul>"
         "<p>Built with Qt and C</p>"
-        "<p>For more information, see the README.md and GUI.md files.</p>"
     );
 }
 
 void MainWindow::updateStatusBar(const QString& message)
 {
     statusBar()->showMessage(message, 5000); // Show for 5 seconds
+}
+
+int MainWindow::selectBestAlgorithm(const QVector<PathResultData>& results, QString& reason)
+{
+    if (results.isEmpty()) {
+        reason = "No results available";
+        return -1;
+    }
+
+    // Filter out algorithms that didn't find a path
+    QVector<int> validIndices;
+    for (int i = 0; i < results.size(); i++) {
+        if (results[i].found) {
+            validIndices.append(i);
+        }
+    }
+
+    if (validIndices.isEmpty()) {
+        reason = "No path found";
+        return -1;
+    }
+
+    // If only one algorithm found a path, use it
+    if (validIndices.size() == 1) {
+        reason = "Only algorithm that found a path";
+        return validIndices[0];
+    }
+
+    // Step 1: Check if graph has negative weights - prioritize Bellman-Ford
+    bool negativeWeights = hasNegativeWeights();
+    if (negativeWeights) {
+        for (int idx : validIndices) {
+            if (results[idx].algorithm.contains("Bellman-Ford", Qt::CaseInsensitive)) {
+                reason = "Best for graphs with negative weights";
+                return idx;
+            }
+        }
+    }
+
+    // Step 2: Group algorithms by path optimality (weight)
+    // Find the minimum weight among all results
+    double minWeight = results[validIndices[0]].totalWeight;
+    for (int idx : validIndices) {
+        if (results[idx].totalWeight < minWeight) {
+            minWeight = results[idx].totalWeight;
+        }
+    }
+
+    // Get all algorithms with optimal (minimum) weight
+    QVector<int> optimalIndices;
+    const double EPSILON = 0.0001; // For floating-point comparison
+    for (int idx : validIndices) {
+        if (qAbs(results[idx].totalWeight - minWeight) < EPSILON) {
+            optimalIndices.append(idx);
+        }
+    }
+
+    // Step 3: Among optimal paths, check path length (number of vertices)
+    if (optimalIndices.size() > 1) {
+        int minPathLength = results[optimalIndices[0]].path.size();
+        QVector<int> shortestPathIndices;
+
+        // Find minimum path length
+        for (int idx : optimalIndices) {
+            if (results[idx].path.size() < minPathLength) {
+                minPathLength = results[idx].path.size();
+            }
+        }
+
+        // Get all algorithms with shortest path
+        for (int idx : optimalIndices) {
+            if (results[idx].path.size() == minPathLength) {
+                shortestPathIndices.append(idx);
+            }
+        }
+
+        optimalIndices = shortestPathIndices;
+    }
+
+    // Step 4: If paths are equivalent, choose the fastest algorithm
+    if (optimalIndices.size() > 1) {
+        int fastestIdx = optimalIndices[0];
+        double minTime = results[fastestIdx].timeMs;
+
+        for (int idx : optimalIndices) {
+            if (results[idx].timeMs < minTime) {
+                minTime = results[idx].timeMs;
+                fastestIdx = idx;
+            }
+        }
+
+        reason = QString("Fastest with optimal path (%1 ms)").arg(minTime, 0, 'f', 3);
+        return fastestIdx;
+    }
+
+    // Step 5: Only one optimal algorithm remains
+    int selectedIdx = optimalIndices[0];
+
+    // Check if this is uniquely optimal by weight
+    bool uniqueWeight = true;
+    for (int idx : validIndices) {
+        if (idx != selectedIdx &&
+            qAbs(results[idx].totalWeight - results[selectedIdx].totalWeight) < EPSILON) {
+            uniqueWeight = false;
+            break;
+        }
+    }
+
+    if (uniqueWeight) {
+        reason = QString("Most optimal path (weight: %1)").arg(results[selectedIdx].totalWeight, 0, 'f', 1);
+    } else {
+        reason = QString("Shortest optimal path (%1 vertices)").arg(results[selectedIdx].path.size());
+    }
+
+    return selectedIdx;
+}
+
+bool MainWindow::hasNegativeWeights() const
+{
+    if (!m_graphWrapper || !m_graphWrapper->hasGraph() || !m_graphWrapper->isWeighted()) {
+        return false;
+    }
+
+    QVector<EdgeData> edges = m_graphWrapper->getEdges();
+    for (const EdgeData& edge : edges) {
+        if (edge.weight < 0) {
+            return true;
+        }
+    }
+
+    return false;
 }

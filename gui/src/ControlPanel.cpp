@@ -114,7 +114,7 @@ void ControlPanel::createGraphConfigGroup()
 
     // Number of vertices
     m_verticesSpinBox = new QSpinBox();
-    m_verticesSpinBox->setRange(2, 100);
+    m_verticesSpinBox->setRange(2, INT_MAX);
     m_verticesSpinBox->setValue(5);
     formLayout->addRow("Vertices:", m_verticesSpinBox);
 

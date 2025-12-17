@@ -26,7 +26,9 @@ ResultsWidget::~ResultsWidget()
 
 void ResultsWidget::displayResults(const GraphWrapper* graph,
                                    const QVector<PathResultData>& results,
-                                   int start, int end)
+                                   int start, int end,
+                                   int highlightedIndex,
+                                   const QString& highlightReason)
 {
     if (!graph || results.isEmpty()) {
         clearResults();
@@ -49,6 +51,12 @@ void ResultsWidget::displayResults(const GraphWrapper* graph,
 
     for (int i = 0; i < results.size(); i++) {
         output += formatAlgorithmResult(results[i], i + 1);
+
+        // Mark the highlighted algorithm
+        if (i == highlightedIndex && !highlightReason.isEmpty()) {
+            output += QString("  ★ HIGHLIGHTED: %1\n").arg(highlightReason);
+        }
+
         if (i < results.size() - 1) {
             output += "\n";
         }

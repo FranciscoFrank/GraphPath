@@ -79,8 +79,19 @@ void GraphEditorWidget::setNodeCount(int count)
 
 void GraphEditorWidget::addVertex(const QPointF& position)
 {
+    // The new vertex ID should match the current size before appending
+    // If we have nodes [0,1,2,...,24], size=25, next ID should be 25
     int newId = m_nodes.size();
     m_nodes.append(NodePosition(newId, position));
+
+    // Sync coordinates for the newly added vertex
+    if (m_graphWrapper && m_graphWrapper->hasGraph()) {
+        // Normalize coordinates to a 0-1000 range
+        double normalizedX = position.x() / width() * 1000.0;
+        double normalizedY = position.y() / height() * 1000.0;
+        m_graphWrapper->setVertexCoordinates(newId, normalizedX, normalizedY);
+    }
+
     update();
 }
 
@@ -184,8 +195,14 @@ void GraphEditorWidget::onGraphChanged()
     int newCount = m_graphWrapper->getNumVertices();
     int currentCount = m_nodes.size();
 
+    // Only reset layout if vertex count changed by more than 1
+    // or if vertices were removed (newCount < currentCount)
     if (newCount != currentCount) {
-        setNodeCount(newCount);
+        if (newCount < currentCount || newCount > currentCount + 1) {
+            // Multiple vertices added/removed - reset layout
+            setNodeCount(newCount);
+        }
+        // If exactly one vertex was added, MainWindow::onAddVertex will handle it
     }
 
     // Automatically sync coordinates when graph changes

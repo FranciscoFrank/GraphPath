@@ -103,6 +103,10 @@ private:
     void createStatusBar();
     void connectSignals();
     void updateStatusBar(const QString& message);
+
+    // Smart algorithm selection
+    int selectBestAlgorithm(const QVector<PathResultData>& results, QString& reason);
+    bool hasNegativeWeights() const;
 };
 
 #endif // MAINWINDOW_H

@@ -171,6 +171,7 @@ void print_statistics(const Graph* graph, int start, int end, PathResult** resul
     printf("\n--- Performance Comparison ---\n");
     PathResult* fastest = NULL;
     PathResult* shortest = NULL;
+    PathResult* optimal = NULL;  // Shortest path length (number of edges)
 
     for (int i = 0; i < num_results; i++) {
         if (results[i]->found) {
@@ -179,6 +180,10 @@ void print_statistics(const Graph* graph, int start, int end, PathResult** resul
             }
             if (!shortest || results[i]->total_weight < shortest->total_weight) {
                 shortest = results[i];
+            }
+            // For path optimality, use path_length (number of vertices)
+            if (!optimal || results[i]->path_length < optimal->path_length) {
+                optimal = results[i];
             }
         }
     }
@@ -189,6 +194,10 @@ void print_statistics(const Graph* graph, int start, int end, PathResult** resul
     if (shortest && graph->is_weighted) {
         printf("Shortest path found by: %s (weight: %.1f)\n",
                shortest->algorithm, shortest->total_weight);
+    }
+    if (optimal) {
+        printf("Most optimal path: %s (%d edges)\n",
+               optimal->algorithm, optimal->path_length - 1);
     }
 
     printf("\n");

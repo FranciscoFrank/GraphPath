@@ -118,30 +118,43 @@ PathResult* bellman_ford_find_path(const Graph* graph, int start, int end) {
         if (!updated) break;
     }
 
-    // Check for negative weight cycles
-    bool has_negative_cycle = false;
-    for (int j = 0; j < edge_count; j++) {
-        int u = edges[j].src;
-        int v = edges[j].dest;
-        double weight = edges[j].weight;
+    // Reconstruct the path first
+    result->path = reconstruct_path(parent, start, end, &result->path_length);
+    result->found = (result->path != NULL);
+    result->total_weight = (result->found) ? dist[end] : 0.0;
 
-        if (dist[u] != DBL_MAX && dist[u] + weight < dist[v]) {
-            has_negative_cycle = true;
-            fprintf(stderr, "Warning: Negative weight cycle detected!\n");
-            break;
+    // Check if there's a negative cycle that affects the shortest path
+    // We only care about negative cycles that can improve the distance to vertices on our path
+    if (result->found) {
+        bool path_affected = false;
+
+        // Check if any vertex on the path can still be improved (is in a negative cycle)
+        for (int i = 0; i < result->path_length; i++) {
+            int vertex = result->path[i];
+
+            // Try one more relaxation for edges leading to this vertex
+            for (int j = 0; j < edge_count; j++) {
+                int u = edges[j].src;
+                int v = edges[j].dest;
+                double weight = edges[j].weight;
+
+                if (v == vertex && dist[u] != DBL_MAX && dist[u] + weight < dist[v]) {
+                    path_affected = true;
+                    break;
+                }
+            }
+
+            if (path_affected) break;
         }
-    }
 
-    // Reconstruct path if no negative cycle
-    if (!has_negative_cycle) {
-        result->path = reconstruct_path(parent, start, end, &result->path_length);
-        result->found = (result->path != NULL);
-        result->total_weight = (result->found) ? dist[end] : 0.0;
-    } else {
-        result->found = false;
-        result->path = NULL;
-        result->path_length = 0;
-        result->total_weight = 0.0;
+        if (path_affected) {
+            fprintf(stderr, "Warning: Path is affected by negative weight cycle!\n");
+            free(result->path);
+            result->path = NULL;
+            result->path_length = 0;
+            result->found = false;
+            result->total_weight = 0.0;
+        }
     }
 
     clock_t end_time = clock();

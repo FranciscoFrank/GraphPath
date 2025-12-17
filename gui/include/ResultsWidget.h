@@ -29,7 +29,9 @@ public:
     // Display results
     void displayResults(const GraphWrapper* graph,
                        const QVector<PathResultData>& results,
-                       int start, int end);
+                       int start, int end,
+                       int highlightedIndex = -1,
+                       const QString& highlightReason = QString());
 
     // Clear results
     void clearResults();

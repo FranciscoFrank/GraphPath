@@ -78,6 +78,20 @@ bool graph_add_vertex(Graph* graph) {
 
     graph->adj_list = new_adj_list;
     graph->adj_list[graph->num_vertices] = NULL;  // Initialize new vertex
+
+    // Reallocate coordinates array if it exists
+    if (graph->coords) {
+        Coordinates* new_coords = (Coordinates*)realloc(graph->coords, new_count * sizeof(Coordinates));
+        if (!new_coords) {
+            fprintf(stderr, "Error: Memory allocation failed for coordinates\n");
+            return false;
+        }
+        graph->coords = new_coords;
+        // Initialize new coordinate to (0, 0)
+        graph->coords[graph->num_vertices].x = 0.0;
+        graph->coords[graph->num_vertices].y = 0.0;
+    }
+
     graph->num_vertices = new_count;
 
     return true;
