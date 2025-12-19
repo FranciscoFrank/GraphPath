@@ -1,19 +1,4 @@
-# Build directory
-build/
-
-# Object files
-*.o
-*.obj
-
-# Executables
-*.exe
-*.out
-graphpath
-test_graph
-
 # Editor files
 .vscode/
 .idea/
 
-# Stress test files
-stress_*.txt
